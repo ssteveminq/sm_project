@@ -126,7 +126,7 @@ def track_motion_during_duration(counter_in):
 
  	battery_msg = rospy.wait_for_message('/hsrb/battery_state', BatteryState)
 	State_msg.data.append(battery_msg.power)
-	State_msg.data.append(original_cmd_idx)
+	State_msg.data.append(int(desired_states[original_cmd_idx]))
 	State_pub.publish(State_msg)
 
 
