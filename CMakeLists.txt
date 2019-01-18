@@ -13,6 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   std_srvs
   tf
+  move_base_msgs
+  actionlib
+  actionlib_msgs
 )
 
 #find_package(Eigen3 REQUIRED)
@@ -53,6 +56,7 @@ catkin_package(
   std_msgs
   message_runtime
   tf
+  actionlib
  )
 
 include_directories(

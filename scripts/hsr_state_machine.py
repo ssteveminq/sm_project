@@ -1,61 +1,68 @@
+#!/usr/bin/env python
+
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-import roslib
+# import roslib
 import rospy
 import smach
 import smach_ros
-from smach import State
+# from smach import State
 import tf.transformations
+
+import csv
+import numpy as np
+import time
+
 
 
 def get_action(cmd_idx):
 
-    if cmd_idx==len(desired_staes):
-        print "index exceeds the lenght of array"
-        output_state = 'end_demo'
-        return output_state
+	if cmd_idx==len(desired_states):
+		print "index exceeds the lenght of array"
+		output_state = 'end_demo'
+		return output_state
 
-    desired_state=desired_states[cmd_idx]
-    
-    if desired_state == '0':
-        output_state = 'Go_S0'
-    elif desired_state == '1':
-        output_state = 'Go_S1'
-    elif desired_state == '2':
-        output_state = 'Go_S2'
-    elif desired_state == '3':
-        output_state = 'Go_S3'
-    elif desired_state == '4':
-        output_state = 'Go_S4'
-    else:  
-        print "desired state out of bounds"
-        output_state = 'end_demo'
+	desired_state=desired_states[cmd_idx]
+	
+	if desired_state == '0':
+		output_state = 'Go_S0'
+	elif desired_state == '1':
+		output_state = 'Go_S1'
+	elif desired_state == '2':
+		output_state = 'Go_S2'
+	elif desired_state == '3':
+		output_state = 'Go_S3'
+	elif desired_state == '4':
+		output_state = 'Go_S4'
+	else:  
+		print "desired state out of bounds"
+		output_state = 'end_demo'
 
-    return output_state
+	return output_state
 
 #from cmd_idx with desired_states_array, set the goal position 
 def generate_send_goal(cmd_idx):
 
-       if cmd_idx ==-1:
-           return GoalStatus.SUCCEEDED
+	if cmd_idx ==-1:
+		return GoalStatus.SUCCEEDED
 
-	goal_y = 0.4
-	goal_yaw = 0.0	
+	goal_y = 0.1
+	goal_yaw = 0.0  
 
-        cmd_state = desired_staes[cmd_idx]
+	cmd_state = desired_states[cmd_idx]
 
 	if cmd_state == '0':
-		goal_x = 4.0
+		goal_x = 5.5
 	elif cmd_state == '1':
-		goal_x = 3.5
-	elif cmd_state == '2':
-		goal_x = 3.0
+		goal_x = 5.0
 	elif cmd_state == '3':
-		goal_x = 2.5
+		goal_x = 4.0
+	elif cmd_state == '3':
+		goal_x = 4.5
 	else:  
-		goal_x = 2.0
+		goal_x = 4.0
 
 	# fill ROS message
 	pose = PoseStamped()
@@ -76,7 +83,7 @@ def generate_send_goal(cmd_idx):
 
 	# print result of navigation
 	action_state = cli.get_state()
-
+	print 'action_state',action_state
 
 	return action_state
 
@@ -84,61 +91,86 @@ def generate_send_goal(cmd_idx):
 
 class S_0(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes = ['Go_S0', 'GO_S1' , 'end_demo'])
-                                    input_keys=['S0_counter_in'],
-                                    output_keys=['S0_counter_out'])
+		# smach.State.__init__(self, outcomes = ['Go_S0', 'Go_S1' , 'end_demo'],
+		# 							input_keys=['S0_counter_in'],
+		# 							output_keys=['S0_out'])
+
+		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1' , 'end_demo'],
+							input_keys=['S0_counter_in'],
+							output_keys=['S0_out'])
+
+		# self.counter = 0
 
 
 	def execute(self, userdata):
-		rospy.loginfo('Moving to state 0')
-                
-                cmd_idx=userdata.S0_counter_in
+		rospy.loginfo('Executing S_0')
+				
+		cmd_idx=userdata.S0_counter_in
 
-                start_time = rospy.Time()
-                duration=0
+		print "cmd_idx", cmd_idx
 
-                while duration<10.0:
+		start_time = rospy.get_time()
 
-                    action_state = generate_send_goal(cmd_idx)
-
-                    curr_time =rospy.Time()
-                    duration = curr_time - start_time
-                    
-                    print "duration time: %s, action_state %s" % (duration, action_state)
-
-                    if action_state == GoalStatus.SUCCEEDED:
-                        cmd_idx= -1
+		print "start_time", start_time
+		duration=0
 
 
-                if action_state == GoalStatus.SUCCEEDED:
-                    userdata.S0_counter_out=userdata.S0_counter_in+1
-                    return get_action(userdata.S0_counter_out)
-                else
-                    print action_state
+		while duration<1.0:
 
-                    return 'end_demo'
-                    
-                # if state_index == length_state_array
-                                # return 'end_demo'
+			action_state = generate_send_goal(cmd_idx)
+			
+			curr_time =rospy.get_time()
 
+			print "curr_time", curr_time
+
+			duration = curr_time - start_time
+			print duration
+			
+			print "duration time: %s, action_state %s" % (duration, action_state)
+	
+
+
+			if action_state == GoalStatus.SUCCEEDED:
+				cmd_idx= -1
+
+
+
+		if action_state == GoalStatus.SUCCEEDED:
+			userdata.S0_out=userdata.S0_counter_in+1
+			# hello=userdata.S0_out
+			print "userdata.S0_counter out", userdata.S0_out
+			# print userdata.S0_counter_in
+			return get_action(hello)
+		else:
+			print "in else:"
+			print "action_state", action_state
+
+			return 'end_demo'
+			
+		# if state_index == length_state_array
+						# return 'end_demo'
 
 
 
 class S_1(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes = ['Go_S0','Go_S1', 'GO_S2', 'end_demo'],
-                                           input_keys=['S1_counter_in'],
-                                           output_keys=['S1_counter_out'])
+		smach.State.__init__(self, outcomes = ['Go_S0','Go_S1', 'Go_S2', 'end_demo'],
+										   input_keys=['S1_counter_in'],
+										   output_keys=['S1_counter_out'])
 
-        def execute(self, userdata):
-            rospy.loginfo('Executing state S_1')
-            rospy.loginfo('Counter = %f'%userdata.S1_counter_in)
-            return 'end_demo'
-     
+		def execute(self, userdata):
+			rospy.loginfo('Executing state S_1')
+			rospy.loginfo('Counter = %f'%userdata.S1_counter_in)
+			return 'end_demo'
+	 
 
 class S_2(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes = ['Go_S0', 'GO_S2', 'end_demo'])
+		smach.State.__init__(self, outcomes = ['Go_S0', 'Go_S2', 'end_demo'])
+	def execute(self, userdata):
+		rospy.loginfo('Executing state S_2')
+		# rospy.loginfo('Counter = %f'%userdata.S1_counter_in)
+		return 'end_demo'
 
 
 class S_3(smach.State):
@@ -153,7 +185,7 @@ class POS_4(smach.State):
 
 
 # def main():
-
+# def main():
 
 rospy.init_node('test_move')
 
@@ -188,7 +220,10 @@ desired_states.resize(desired_states.shape[0])
 
 print desired_states
 
+# exit()
+
 #==================================
+
 
 # initialize action client
 cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
@@ -199,17 +234,17 @@ cli.wait_for_server()
 # create SMACH state machine
 sm = smach.StateMachine(outcomes=['stop'])
 # sm.userdata.desired_states =desired_states
-sm.userdata.state_index=0
+sm.userdata.state_index=1
 
 with sm:
 	smach.StateMachine.add('S_0', S_0(),
 		transitions = {'Go_S0': 'S_0', 'Go_S1' : 'S_1', 'end_demo' : 'stop'},
-                remapping = {'S0_counter_in':'state_index',
-                             'S0_counter_out':'state_index'})
+				remapping = {'S0_counter_in':'state_index',
+							 'S0_out':'state_index'})
 	smach.StateMachine.add('S_1', S_1(),
-		transitions = {'Go_S0': 'S_0', 'Go_S1':'S_1', 'Go_S2':'S_2', 'end_demo':'stop'},
-                remapping = {'S1_counter_in':'state_index',
-                             'S1_counter_out':'state_index'})
+		transitions = {'Go_S0': 'S_0', 'Go_S1':'S_1', 'Go_S2':'stop', 'end_demo':'stop'},
+				remapping = {'S1_counter_in':'state_index',
+							 'S1_counter_out':'state_index'})
 
 
 
@@ -217,4 +252,4 @@ outcome = sm.execute()
 
 
 # if __name__ == '__main__':
-# 	main()
+#   main()

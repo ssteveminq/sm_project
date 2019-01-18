@@ -59,8 +59,8 @@ cli.wait_for_server()
 
 
 # input goal pose
-goal_x = 5.8
-goal_y = 4.8
+goal_x = 5.4
+goal_y = 0.1
 goal_yaw = 0.0
 
 # fill ROS message
@@ -75,10 +75,10 @@ goal = MoveBaseGoal()
 goal.target_pose = pose
 
 # send message to the action server
-#cli.send_goal(goal)
+cli.send_goal(goal)
 
 # wait for the action server to complete the order
-#cli.wait_for_result()
+cli.wait_for_result()
 
 # print result of navigation
 action_state = cli.get_state()
