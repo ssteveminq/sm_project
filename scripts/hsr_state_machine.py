@@ -8,7 +8,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import rospy
 import smach
 import smach_ros
-# from smach import State
+from smach import State
 import tf.transformations
 
 import csv
@@ -91,16 +91,9 @@ def generate_send_goal(cmd_idx):
 
 class S_0(smach.State):
 	def __init__(self):
-		# smach.State.__init__(self, outcomes = ['Go_S0', 'Go_S1' , 'end_demo'],
-		# 							input_keys=['S0_counter_in'],
-		# 							output_keys=['S0_out'])
-
-		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1' , 'end_demo'],
-							input_keys=['S0_counter_in'],
-							output_keys=['S0_out'])
-
-		# self.counter = 0
-
+		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1','end_demo'],
+							input_keys=['S0_counter_in','S0_counter_out'],
+							output_keys=['S0_counter_out'])
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing S_0')
@@ -115,7 +108,7 @@ class S_0(smach.State):
 		duration=0
 
 
-		while duration<1.0:
+		while duration<10.0:
 
 			action_state = generate_send_goal(cmd_idx)
 			
@@ -136,11 +129,13 @@ class S_0(smach.State):
 
 
 		if action_state == GoalStatus.SUCCEEDED:
-			userdata.S0_out=userdata.S0_counter_in+1
-			# hello=userdata.S0_out
-			print "userdata.S0_counter out", userdata.S0_out
+			userdata.S0_counter_out=userdata.S0_counter_in+1
+			# hello=userdata.S0_counter_out
+			print "userdata.S0_counter out", userdata.S0_counter_out
 			# print userdata.S0_counter_in
-			return get_action(hello)
+
+			return get_action(userdata.S0_counter_out)
+			# return 'end_demo'
 		else:
 			print "in else:"
 			print "action_state", action_state
@@ -154,15 +149,16 @@ class S_0(smach.State):
 
 class S_1(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes = ['Go_S0','Go_S1', 'Go_S2', 'end_demo'],
-										   input_keys=['S1_counter_in'],
-										   output_keys=['S1_counter_out'])
+		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1', 'Go_S2', 'end_demo'],
+							input_keys=['S1_counter_in','S1_counter_out'],
+							output_keys=['S1_counter_out'])
 
-		def execute(self, userdata):
+	def execute(self, userdata):
 			rospy.loginfo('Executing state S_1')
 			rospy.loginfo('Counter = %f'%userdata.S1_counter_in)
 			return 'end_demo'
-	 
+
+ 
 
 class S_2(smach.State):
 	def __init__(self):
@@ -234,13 +230,13 @@ cli.wait_for_server()
 # create SMACH state machine
 sm = smach.StateMachine(outcomes=['stop'])
 # sm.userdata.desired_states =desired_states
-sm.userdata.state_index=1
+sm.userdata.state_index=0
 
 with sm:
 	smach.StateMachine.add('S_0', S_0(),
 		transitions = {'Go_S0': 'S_0', 'Go_S1' : 'S_1', 'end_demo' : 'stop'},
 				remapping = {'S0_counter_in':'state_index',
-							 'S0_out':'state_index'})
+							 'S0_counter_out':'state_index'})
 	smach.StateMachine.add('S_1', S_1(),
 		transitions = {'Go_S0': 'S_0', 'Go_S1':'S_1', 'Go_S2':'stop', 'end_demo':'stop'},
 				remapping = {'S1_counter_in':'state_index',
