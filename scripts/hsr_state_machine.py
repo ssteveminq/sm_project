@@ -103,7 +103,8 @@ class S_0(smach.State):
 
                     curr_time =rospy.Time()
                     duration = curr_time - start_time
-                    print "duration time: ", duration + "action_state", action_state
+                    
+                    print "duration time: %s, action_state %s" % (duration, action_state)
 
                     if action_state == GoalStatus.SUCCEEDED:
                         cmd_idx= -1
