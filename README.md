@@ -1,7 +1,7 @@
 # sm_project
 
 
-# To record rosbag & save to csv file 
+### To record rosbag & save to csv file 
 - 'SM/current_state' includes [battery state / current state])
 
 ```
