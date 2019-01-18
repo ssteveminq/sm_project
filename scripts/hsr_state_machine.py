@@ -4,6 +4,8 @@ import actionlib
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from std_msgs.msg import Int8MultiArray
+from tmc_msgs.msg import BatteryState
 # import roslib
 import rospy
 import smach
@@ -89,7 +91,12 @@ def generate_send_goal(cmd_idx):
 
 
 def track_motion_during_duration(counter_in):
+	
+	State_pub=rospy.Publisher('SM/current_state', Int8MultiArray, queue_size=10)
+	State_msg = Int8MultiArray()
+
 	cmd_idx=counter_in
+	original_cmd_idx=cmd_idx
 	print "cmd_idx", cmd_idx
 
 	start_time = rospy.get_time()
@@ -112,9 +119,16 @@ def track_motion_during_duration(counter_in):
 		print "duration time: %s, action_state %s" % (duration, action_state)
 
 
-
 		if action_state == GoalStatus.SUCCEEDED:
 			cmd_idx= -1
+
+
+
+ 	battery_msg = rospy.wait_for_message('/hsrb/battery_state', BatteryState)
+	State_msg.data.append(battery_msg.power)
+	State_msg.data.append(original_cmd_idx)
+	State_pub.publish(State_msg)
+
 
 	return action_state
 
@@ -235,7 +249,6 @@ class S_4(smach.State):
 rospy.init_node('test_move')
 
 #===========Read csv==============
-
 f = open('../csv_parser/states_and_vals.csv', 'rt')
 reader = csv.reader(f)
 row_count = sum(1 for row in reader)
