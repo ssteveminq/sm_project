@@ -52,21 +52,21 @@ def generate_send_goal(cmd_idx):
 	if cmd_idx ==-1:
 		return GoalStatus.SUCCEEDED
 
-	goal_y = 0.25
+	goal_y = 0.2
 	goal_yaw = 0.0  
 
 	cmd_state = desired_states[cmd_idx]
 
 	if cmd_state == '0':
-		goal_x = 5.7
+		goal_x = 6.0
 	elif cmd_state == '1':
-		goal_x = 5.2
+		goal_x = 5.5
 	elif cmd_state == '2':
-		goal_x = 4.7
+		goal_x = 5.0
 	elif cmd_state == '3':
-		goal_x = 4.2
+		goal_x = 4.5
 	else:  
-		goal_x = 3.7
+		goal_x = 4.0
 
 	# fill ROS message
 	pose = PoseStamped()
@@ -105,27 +105,26 @@ def track_motion_during_duration(counter_in):
 
 	print "start_time", start_time
 	duration=0
-
+        iterator=0
 
 	while duration<10.0:
 
+                iterator=iterator+1
 		action_state = generate_send_goal(cmd_idx)
 		
 		curr_time =rospy.get_time()
-
-		print "curr_time", curr_time
-
+		# print "curr_time", curr_time
 		duration = curr_time - start_time
-		print duration
+		# print duration
 		
-		print "duration time: %s, action_state %s" % (duration, action_state)
-
+                if iterator%100000==1:
+                    print "duration time: %s, action_state %s," % (duration, action_state)
 
 		if action_state == GoalStatus.SUCCEEDED:
 			cmd_idx= -1
 
 
-
+        iterator=0
  	battery_msg = rospy.wait_for_message('/hsrb/battery_state', BatteryState)
 	State_msg.data.append(battery_msg.power)
 	State_msg.data.append(int(desired_states[original_cmd_idx]))
@@ -169,7 +168,8 @@ class S_1(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_1')
-
+                tts.say("Executing State 1")
+                rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S1_counter_in)
 
@@ -192,6 +192,9 @@ class S_2(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_2')
+                tts.say("Executing State 2")
+
+                rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S2_counter_in)
 
@@ -214,6 +217,8 @@ class S_3(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_3')
+                tts.say("Executing State 3")
+                rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S3_counter_in)
 
@@ -235,6 +240,8 @@ class S_4(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_4')
+                tts.say("Executing State 4")
+                rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S4_counter_in)
 
@@ -248,13 +255,13 @@ class S_4(smach.State):
 			return 'end_demo'
 
 
-
-tts = None
+tts=whole_body = None
 
 while not rospy.is_shutdown():
     try:
         robot = Robot()
         tts = robot.try_get('default_tts')
+        whole_body = robot.try_get('whole_body')
         tts.language = tts.ENGLISH
         break
     except (exceptions.ResourceNotFoundError,
@@ -299,7 +306,7 @@ print desired_states
 #==================================
 
 tts.say("Hello operator! I finished reading csv file")
-rospy.sleep(10)
+rospy.sleep(2)
 
 # initialize action client
 cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
@@ -307,12 +314,14 @@ cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
 # wait for the action server to establish connection
 cli.wait_for_server()
 
-# create SMACH state machine
-sm = smach.StateMachine(outcomes=['stop'])
-# sm.userdata.desired_states =desired_states
-sm.userdata.state_index=0
 
-with sm:
+if __name__=='__main__':
+    # create SMACH state machine
+    sm = smach.StateMachine(outcomes=['stop'])
+    # sm.userdata.desired_states =desired_states
+    sm.userdata.state_index=0
+
+    with sm:
 	smach.StateMachine.add('S_0', S_0(),
 		transitions = {'Go_S0': 'S_0', 'Go_S1' : 'S_1', 'end_demo' : 'stop'},
 				remapping = {'S0_counter_in':'state_index',
@@ -334,8 +343,8 @@ with sm:
 				remapping = {'S4_counter_in':'state_index',
 							 'S4_counter_out':'state_index'})	
 
-outcome = sm.execute()
+    outcome = sm.execute()
 
 
 # if __name__ == '__main__':
-#   main()
+  # main()
