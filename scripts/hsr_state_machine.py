@@ -6,6 +6,8 @@ from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Int8MultiArray
 from tmc_msgs.msg import BatteryState
+from hsrb_interface import Robot
+from hsrb_interface import exceptions
 # import roslib
 import rospy
 import smach
@@ -50,7 +52,7 @@ def generate_send_goal(cmd_idx):
 	if cmd_idx ==-1:
 		return GoalStatus.SUCCEEDED
 
-	goal_y = 0.1
+	goal_y = 0.25
 	goal_yaw = 0.0  
 
 	cmd_state = desired_states[cmd_idx]
@@ -246,7 +248,22 @@ class S_4(smach.State):
 			return 'end_demo'
 
 
-rospy.init_node('test_move')
+
+tts = None
+
+while not rospy.is_shutdown():
+    try:
+        robot = Robot()
+        tts = robot.try_get('default_tts')
+        tts.language = tts.ENGLISH
+        break
+    except (exceptions.ResourceNotFoundError,
+           exceptions.RobotConnectionError) as e:
+        rospy.logerr("Failed to obtain resource: {}\nRetrying...".format(e))
+
+
+
+# rospy.init_node('test_move')
 
 #===========Read csv==============
 f = open('../csv_parser/states_and_vals.csv', 'rt')
@@ -281,6 +298,8 @@ print desired_states
 
 #==================================
 
+tts.say("Hello operator! I finished reading csv file")
+rospy.sleep(10)
 
 # initialize action client
 cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
