@@ -29,17 +29,22 @@ def get_action(cmd_idx):
 		return output_state
 
 	desired_state=desired_states[cmd_idx]
+	handover_bool=handover[cmd_idx]
 	
-	if desired_state == '0':
+	if desired_state == '0' & handover_bool == 'TRUE':
+		output_state = 'Go_S0_drop_off_completed_work'
+	if desired_state == '0' & handover_bool == 'FALSE':
 		output_state = 'Go_S0'
 	elif desired_state == '1':
 		output_state = 'Go_S1'
 	elif desired_state == '2':
 		output_state = 'Go_S2'
-	elif desired_state == '3':
+	elif desired_state == '3' & handover_bool == 'TRUE'::
+		output_state = 'Go_S3_pick_up_completed_work'
+	elif desired_state == '3' & handover_bool == 'FALSE'::
 		output_state = 'Go_S3'
-	elif desired_state == '4':
-		output_state = 'Go_S4'
+	# elif desired_state == '4':
+	# 	output_state = 'Go_S4'
 	else:  
 		print "desired state out of bounds"
 		output_state = 'end_demo'
@@ -158,11 +163,34 @@ class S_0(smach.State):
 		# if state_index == length_state_array
 						# return 'end_demo'
 
+class S_0_handover(smach.State):
+	def __init__(self):
+		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1','end_demo'],
+							input_keys=['S0_handover_counter_in','S0_handover_counter_out'],
+							output_keys=['S0_handover_counter_out'])
+
+	def execute(self, userdata):
+
+		action_state = track_motion_during_duration(userdata.S0_handover_counter_in)
+
+		if action_state == GoalStatus.SUCCEEDED:
+			userdata.S0_handover_counter_out=userdata.S0_handover_counter_in+1
+			
+			print "userdata.S0_handover_counter out", userdata.S0_handover_counter_out
+
+			return get_action(userdata.S0_handover_counter_out)
+
+		else:
+			"goal was not achieved"
+			return 'end_demo'
+			
+		# if state_index == length_state_array
+						# return 'end_demo'
 
 
 class S_1(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1', 'Go_S2', 'end_demo'],
+		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S0_drop_off_completed_work' 'Go_S1', 'Go_S2', 'end_demo'],
 							input_keys=['S1_counter_in','S1_counter_out'],
 							output_keys=['S1_counter_out'])
 
@@ -186,7 +214,7 @@ class S_1(smach.State):
 
 class S_2(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['Go_S1', 'Go_S2', 'Go_S3', 'end_demo'],
+		smach.State.__init__(self, outcomes=['Go_S1', 'Go_S2', 'Go_S3', 'Go_S3_pick_up_completed_work', 'end_demo'],
 							input_keys=['S2_counter_in','S2_counter_out'],
 							output_keys=['S2_counter_out'])
 
@@ -211,7 +239,8 @@ class S_2(smach.State):
 
 class S_3(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['Go_S2', 'Go_S3', 'Go_S4', 'end_demo'],
+		#  'Go_S4' deleted
+		smach.State.__init__(self, outcomes=['Go_S2', 'Go_S3', 'end_demo'],
 							input_keys=['S3_counter_in','S3_counter_out'],
 							output_keys=['S3_counter_out'])
 
@@ -232,27 +261,50 @@ class S_3(smach.State):
 			return 'end_demo'
 
 
-class S_4(smach.State):
+
+class S_3_handover(smach.State):
 	def __init__(self):
-		smach.State.__init__(self, outcomes=['Go_S3', 'Go_S4', 'end_demo'],
-							input_keys=['S4_counter_in','S4_counter_out'],
-							output_keys=['S4_counter_out'])
+		smach.State.__init__(self, outcomes=['Go_S2', 'Go_S3', 'end_demo'],
+							input_keys=['S3_handover_counter_in','S3_handover_counter_out'],
+							output_keys=['S3_handover_counter_out'])
 
 	def execute(self, userdata):
-		rospy.loginfo('Executing state S_4')
-                tts.say("Executing State 4")
+		rospy.loginfo('Executing state S_3')
+                tts.say("Executing State 3")
                 rospy.sleep(0.5)
 
-		action_state = track_motion_during_duration(userdata.S4_counter_in)
+		action_state = track_motion_during_duration(userdata.S3_handover_counter_in)
 
 		if action_state == GoalStatus.SUCCEEDED:
-			userdata.S4_counter_out=userdata.S4_counter_in+1
-			print "userdata.S4_counter out", userdata.S4_counter_out
+			userdata.S3_handover_counter_out=userdata.S3_handover_counter_in+1
+			print "userdata.S3_handover_counter out", userdata.S3_handover_counter_out
 
-			return get_action(userdata.S4_counter_out)
+			return get_action(userdata.S3_handover_counter_out)
 		else:
 			"goal was not achieved"
 			return 'end_demo'
+
+# class S_4(smach.State):
+# 	def __init__(self):
+# 		smach.State.__init__(self, outcomes=['Go_S3', 'Go_S4', 'end_demo'],
+# 							input_keys=['S4_counter_in','S4_counter_out'],
+# 							output_keys=['S4_counter_out'])
+
+# 	def execute(self, userdata):
+# 		rospy.loginfo('Executing state S_4')
+#                 tts.say("Executing State 4")
+#                 rospy.sleep(0.5)
+
+# 		action_state = track_motion_during_duration(userdata.S4_counter_in)
+
+# 		if action_state == GoalStatus.SUCCEEDED:
+# 			userdata.S4_counter_out=userdata.S4_counter_in+1
+# 			print "userdata.S4_counter out", userdata.S4_counter_out
+
+# 			return get_action(userdata.S4_counter_out)
+# 		else:
+# 			"goal was not achieved"
+# 			return 'end_demo'
 
 
 tts=whole_body = None
@@ -287,17 +339,23 @@ data = [row for row in reader] # list comprehension
 f.close()
 string_col = data[0]
 desired_states = []
+handover = []
 
 for col in range(0, col_count):
 	if (string_col[col] == 'robot_state'):
 		robot_state_col = col 
+	if (string_col[col]) == 'handover'
+		handover_col = col 
 
 for row1 in range(1,row_count):
 	this_row = data[row1]
 	desired_states.extend([this_row[robot_state_col]])
+	handover.extend([this_row[handover_col]])
 
 desired_states = np.array(desired_states)
 desired_states.resize(desired_states.shape[0])
+handover = np.array(handover)
+handover.resize(handover.shape[0])
 
 print desired_states
 
@@ -326,22 +384,34 @@ if __name__=='__main__':
 		transitions = {'Go_S0': 'S_0', 'Go_S1' : 'S_1', 'end_demo' : 'stop'},
 				remapping = {'S0_counter_in':'state_index',
 							 'S0_counter_out':'state_index'})
+	smach.StateMachine.add('S_0_handover', S_0_handover(),
+		transitions = {'Go_S0': 'S_0', 'Go_S1' : 'S_1', 'end_demo' : 'stop'},
+				remapping = {'S0_handover_counter_in':'state_index',
+							 'S0_handover_counter_out':'state_index'})
 	smach.StateMachine.add('S_1', S_1(),
-		transitions = {'Go_S0': 'S_0', 'Go_S1':'S_1', 'Go_S2':'S_2', 'end_demo':'stop'},
+		transitions = {'Go_S0': 'S_0', 'Go_S0_drop_off_completed_work': 'S_0_handover','Go_S1':'S_1', 'Go_S2':'S_2', 'end_demo':'stop'},
 				remapping = {'S1_counter_in':'state_index',
 							 'S1_counter_out':'state_index'})
 	smach.StateMachine.add('S_2', S_2(),
-		transitions = {'Go_S1': 'S_1', 'Go_S2':'S_2', 'Go_S3':'S_3', 'end_demo':'stop'},
+		transitions = {'Go_S1': 'S_1', 'Go_S2':'S_2', 'Go_S3':'S_3', 'Go_S3_pick_up_completed_work': 'S_3_handover', 'end_demo':'stop'},
 				remapping = {'S2_counter_in':'state_index',
 							 'S2_counter_out':'state_index'})
 	smach.StateMachine.add('S_3', S_3(),
-		transitions = {'Go_S2': 'S_2', 'Go_S3':'S_3', 'Go_S4':'S_4', 'end_demo':'stop'},
+		transitions = {'Go_S2': 'S_2', 'Go_S3':'S_3', 'end_demo':'stop'},
 				remapping = {'S3_counter_in':'state_index',
 							 'S3_counter_out':'state_index'})	
-	smach.StateMachine.add('S_4', S_4(),
-		transitions = {'Go_S3':'S_3', 'Go_S4':'S_4', 'end_demo':'stop'},
-				remapping = {'S4_counter_in':'state_index',
-							 'S4_counter_out':'state_index'})	
+	smach.StateMachine.add('S_3_handover', S_3_handover(),
+		transitions = {'Go_S2': 'S_2', 'Go_S3':'S_3', 'end_demo':'stop'},
+				remapping = {'S3_handover_counter_in':'state_index',
+							 'S3_handover_counter_out':'state_index'})	
+	# smach.StateMachine.add('S_3', S_3(),
+	# 	transitions = {'Go_S2': 'S_2', 'Go_S3':'S_3', 'Go_S4':'S_4', 'end_demo':'stop'},
+	# 			remapping = {'S3_counter_in':'state_index',
+	# 						 'S3_counter_out':'state_index'})	
+	# smach.StateMachine.add('S_4', S_4(),
+	# 	transitions = {'Go_S3':'S_3', 'Go_S4':'S_4', 'end_demo':'stop'},
+	# 			remapping = {'S4_counter_in':'state_index',
+	# 						 'S4_counter_out':'state_index'})	
 
     outcome = sm.execute()
 
