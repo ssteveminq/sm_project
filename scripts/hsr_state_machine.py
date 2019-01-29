@@ -57,21 +57,21 @@ def generate_send_goal(cmd_idx):
 	if cmd_idx ==-1:
 		return GoalStatus.SUCCEEDED
 
-	goal_y = 0.2
+	goal_y = 0.17
 	goal_yaw = 0.0  
 
 	cmd_state = desired_states[cmd_idx]
 
 	if cmd_state == '0':
-		goal_x = 6.0
+		goal_x = 5.0
 	elif cmd_state == '1':
 		goal_x = 5.5
 	elif cmd_state == '2':
-		goal_x = 5.0
+		goal_x = 6.0
 	elif cmd_state == '3':
-		goal_x = 4.5
+		goal_x = 6.2
 	else:  
-		goal_x = 4.0
+		goal_x = 4.5
 
 	# fill ROS message
 	pose = PoseStamped()

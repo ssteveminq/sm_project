@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import pynusmv
 import actionlib
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
@@ -41,8 +42,31 @@ desired_position.resize(desired_position.shape[0])
 print desired_position
 ##############################################
 
+####################pynusmv test
+
+pynusmv.init.init_nusmv()
+pynusmv.glob.load_from_file("robot_delivery.smv")
+pynusmv.glob.compute_model()
+Is_init=pynusmv.init.is_nusmv_init()
+
+# print(Is_init)
+
+fsm = pynusmv.glob.prop_database().master.bddFsm
+print(fsm)
+propDb=pynusmv.glob.prop_database()
+print(propDb)
+for prop in propDb:
+    print(prop.type)
+    if prop.type==pynusmv.prop.propTypes['LTL']:
+        print("trueeee!!")
+        spec =prop.exprcore
+        print('Specification', str(spec))
+        violating = pynusmv.mc.check_explain_ltl_spec(spec)
+        print(violating)
 
 
+
+##############################################
 rospy.init_node('test_move')
 
 # initialize action client

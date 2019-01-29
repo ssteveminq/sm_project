@@ -1,0 +1,175 @@
+MODULE main
+
+DEFINE
+	
+	inventory := 0; 
+	human_workstation := 3; 
+	battery_threshold := 50; --no longer can move once the battery falls below threshold
+	battery_charge_deduct := 1; 
+	battery_charging := 1; 
+	workload_add := full; --5; --full; --5;
+	workload_subtract := 1; 
+        full := 15; -- 15 corresponds to 100%
+	full_high := 25; -- 25 corresponds to 100%
+	full_high_battery := 500; 
+	count_handover_max := 2; 
+
+	
+
+VAR
+	human_state: {wait, work, refill};
+	robot_state : inventory..human_workstation;
+	robot_action: {left, right, stay};
+	battery: 0..full_high_battery;               --percentage
+	work_load: 0..full_high;             --percentage
+	prioritize_charge : boolean;   --checks if robot needs to move back to inventory in order to charge
+	human_complete : 0..full;      --percentage. Amount of completed work at Human Workstation
+	charging : boolean; 
+	complete_transfer_amount : 0..full; 
+	handover : boolean; 
+        robot_has_complete_work : boolean; 
+	count_handover : 0..count_handover_max; 
+
+ASSIGN
+
+init(robot_state) := inventory;
+init(human_state) := work;
+init(battery) := full_high_battery; --57;
+init(work_load) := 5; 
+init(robot_action) := {right, stay}; 
+init(prioritize_charge) := FALSE;
+init(human_complete) := 0; 
+init(complete_transfer_amount) := 0;  
+init(count_handover) := 0;  
+
+
+next(work_load) :=
+case
+   -- Work_load cannot exceed 100% 
+   -- Robot cannot deliver new work unless it possesses work to deliver
+   next(human_state = refill) & (work_load + workload_add <= full_high): {work_load + workload_add, work_load}; 
+   next(human_state = refill) & (work_load + workload_add > full_high): {full_high, work_load}; 
+
+   -- work_load cannot fall below 0% 
+   next(human_state != refill) & (work_load - workload_subtract >= 0): work_load - workload_subtract; 
+   TRUE : 0; 
+esac; 
+
+-- tracks completed work present in Human Workstation
+next(human_complete) := 
+case
+   ((human_state = work & next(human_state)!=refill) | (human_state = refill & next(human_state)!=refill)) & (work_load < workload_subtract) & (human_complete - complete_transfer_amount + work_load <= full) & (human_complete - complete_transfer_amount + work_load >= 0) : human_complete - complete_transfer_amount + work_load; 
+   ((human_state = work & next(human_state)!=refill) | (human_state = refill & next(human_state)!=refill)) & (work_load < workload_subtract) & (human_complete - complete_transfer_amount + work_load > full) & (human_complete - complete_transfer_amount + work_load >= 0) : full; 
+   ((human_state = work & next(human_state)!=refill) | (human_state = refill & next(human_state)!=refill)) & (work_load >= workload_subtract) & (human_complete - complete_transfer_amount + workload_subtract) <= full & (human_complete - complete_transfer_amount + workload_subtract) >= 0 : human_complete -complete_transfer_amount + workload_subtract;
+   ((human_state = work & next(human_state)!=refill) | (human_state = refill & next(human_state)!=refill)) & (work_load >= workload_subtract) & (human_complete - complete_transfer_amount + workload_subtract) > full & (human_complete - complete_transfer_amount + workload_subtract) >= 0  : full;
+   
+   human_state = wait : human_complete; 
+
+   -- checking of the bounds is needed to make program work. But complete transfer amount is calculated properly 
+   next(human_state = refill) & human_state != refill : 0;
+   TRUE : human_complete; 
+esac; 
+
+-- Amount of completed work to transfer from Human Workstation to robot. Transfer occurs upon robot arrival
+next(complete_transfer_amount) :=
+case
+   next(human_state = refill) & human_state != refill : human_complete; 
+   TRUE : 0; 
+esac; 
+
+next(robot_state) :=      
+case
+   --robot_state = human_workstation : human_workstation - 1;
+   robot_action = right & robot_state < human_workstation : robot_state + 1; -- move right
+   robot_action = left  & robot_state > inventory : robot_state - 1; -- move left
+   robot_action = stay  : robot_state; -- stay puth
+   TRUE : robot_state; 
+esac;
+
+next(human_state) :=
+case
+   next(robot_state) = human_workstation : refill; 
+   human_complete = full & robot_state != human_workstation : wait; -- if the workstation is too messy, the human must wait for pickup
+   work_load > 0 : work; 
+   work_load = 0 : wait;
+   TRUE : wait; 
+esac; 
+
+   
+next(battery) :=
+case
+   -- battery charge cannot exceed 100% 
+   robot_state = inventory & next(robot_state) = inventory & (battery + battery_charging <= full_high_battery) : battery + battery_charging; 
+   robot_state = inventory & next(robot_state) = inventory & (battery + battery_charging > full_high_battery) : full_high_battery;
+   -- battery charge cannot fall below 0%  
+   (battery - battery_charge_deduct) >= 0 : battery - battery_charge_deduct;
+   TRUE : 0;  
+esac; 
+
+next(robot_action) := 
+case
+   next(battery) < battery_threshold : stay; -- cannot move if robot's battery falls below threshold
+   -- Battery considerations. Move toward inventory station if battery risks falling below threshold value 
+   next(count_handover) > 0 & count_handover + 1 < count_handover_max : stay;
+   next(prioritize_charge) = TRUE & next(robot_state) != inventory : left;
+   next(prioritize_charge) = TRUE & next(robot_state) = inventory : stay; 
+   next(prioritize_charge) = TRUE & (robot_state) = inventory : stay; 
+   -- constrain to motion in 2D grid
+   next(robot_state) = inventory : {right, stay}; 
+   next(robot_state) = human_workstation : {left, stay}; 
+   TRUE : {left, right, stay};
+esac; 
+
+-- Does robot need to move back to charging station? 
+next(prioritize_charge) := 
+case
+   -- stay True 
+   prioritize_charge = TRUE & robot_state != inventory : TRUE;
+   -- change from False to True 
+   (next(robot_state) != inventory) & (next(battery) - (next(robot_state)+2) * battery_charge_deduct <= battery_threshold) : TRUE;
+   -- Do not move from inventory station until sufficient charge is obtained.       
+   (next(battery)-2*human_workstation*battery_charge_deduct < battery_threshold) & robot_state = inventory : TRUE;   
+   TRUE : FALSE; 
+esac; 
+
+next(charging):=
+case
+   next(battery) > battery : TRUE; 
+   TRUE : FALSE; 
+esac; 
+
+
+next(handover):=
+case
+   next(complete_transfer_amount) > 0: TRUE; 
+   next(robot_state) = inventory & robot_state != inventory & robot_has_complete_work = TRUE : TRUE;
+   TRUE : FALSE; 
+esac; 
+
+next(robot_has_complete_work) :=
+case
+   next(complete_transfer_amount) > 0 : TRUE; 
+   robot_has_complete_work = TRUE & next(robot_state) != inventory : TRUE; 
+   next(robot_state) = inventory & robot_state != inventory & robot_has_complete_work = TRUE : FALSE;
+   TRUE : FALSE;   
+esac;
+
+next(count_handover) := 
+case
+   count_handover = count_handover_max : 0;
+   handover = FALSE & next(handover) = TRUE : 1;
+   count_handover > 0 & count_handover < count_handover_max : count_handover + 1; 
+   TRUE : 0; 
+esac; 
+
+LTLSPEC 
+--!G F (prioritize_charge = TRUE)
+--G (battery >= battery_threshold)
+--!G F (robot_state = human_workstation)
+--!G F (complete_transfer_amount > 2)
+-- 6/20 = 30% and 10/20 = 50%
+--! ((G F work_load >= 6) & (G work_load <= 10) & (G work_load > 0) ) 
+--G (charging -> robot_state = inventory) 
+! ((G F work_load >= 6) & (G work_load <= 20) & (G work_load > 0) ) 
+
+
