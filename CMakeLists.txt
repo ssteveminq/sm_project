@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   move_base_msgs
   actionlib
   actionlib_msgs
+  sm_msgs
 )
 
 #find_package(Eigen3 REQUIRED)
@@ -57,6 +58,7 @@ catkin_package(
   message_runtime
   tf
   actionlib
+  sm_msgs
  )
 
 include_directories(
