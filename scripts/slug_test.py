@@ -18,7 +18,14 @@ import tf.transformations
 import csv
 import numpy as np
 import time
+import json 
+import random 
+import os
+import sys
+from slugmanager import Controller 
 
+
+slug_controller= Controller()
 
 
 def get_action(cmd_idx):
@@ -168,7 +175,7 @@ class S_1(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_1')
-                tts.say("Executing State 1")
+                # tts.say("Executing State 1")
                 rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S1_counter_in)
@@ -192,7 +199,7 @@ class S_2(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_2')
-                tts.say("Executing State 2")
+                # tts.say("Executing State 2")
 
                 rospy.sleep(0.5)
 
@@ -217,7 +224,7 @@ class S_3(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_3')
-                tts.say("Executing State 3")
+                # tts.say("Executing State 3")
                 rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S3_counter_in)
@@ -240,7 +247,7 @@ class S_4(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_4')
-                tts.say("Executing State 4")
+                # tts.say("Executing State 4")
                 rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S4_counter_in)
@@ -270,7 +277,7 @@ while not rospy.is_shutdown():
 
 
 
-# rospy.init_node('test_move')
+rospy.init_node('test_move')
 
 #===========Read csv==============
 f = open('../csv_parser/states_and_vals.csv', 'rt')
@@ -305,7 +312,7 @@ print desired_states
 
 #==================================
 
-tts.say("Hello operator! I finished reading csv file")
+# tts.say("Hello operator! I finished reading csv file")
 rospy.sleep(2)
 
 # initialize action client
@@ -316,6 +323,10 @@ cli.wait_for_server()
 
 
 if __name__=='__main__':
+
+    #create Slug_controller
+    # rospy.Subscriber=
+
     # create SMACH state machine
     sm = smach.StateMachine(outcomes=['stop'])
     # sm.userdata.desired_states =desired_states
