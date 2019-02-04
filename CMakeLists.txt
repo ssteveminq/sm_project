@@ -10,13 +10,13 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   message_generation
+  #message_runtime
   std_msgs
   std_srvs
   tf
   move_base_msgs
   actionlib
   actionlib_msgs
-  sm_msgs
 )
 
 #find_package(Eigen3 REQUIRED)
@@ -36,12 +36,22 @@ endif()
    #GoTargetName.srv
    #Approach.srv
 #)
+add_message_files(
+    DIRECTORY msg
+    FILES Slug_state.msg
+    )
 
-#generate_messages(
-   #DEPENDENCIES
-   #std_msgs
-   #std_srvs
-#)
+add_action_files(
+    DIRECTORY action
+    FILES Sm_State.action
+    
+    )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+   std_srvs
+   actionlib_msgs
+)
 
 include_directories(${EIGEN3_INCLUDE_DIR})
 #include_directories(include)
@@ -58,7 +68,7 @@ catkin_package(
   message_runtime
   tf
   actionlib
-  sm_msgs
+  actionlib_msgs
  )
 
 include_directories(

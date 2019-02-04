@@ -1,0 +1,9 @@
+#goal definition
+bool start
+---
+#result definition
+int32 policy
+int32[] transitions
+---
+#feedback
+bool is_feasible

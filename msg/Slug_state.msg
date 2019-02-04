@@ -1,0 +1,13 @@
+Header header
+bool wait
+bool obstacle2
+bool obstacle3
+int8 workload
+bool complete_work_at_workstation
+bool complete_dropoff_success
+int8 complete_dropoff_tries
+int8 r_state
+int8 workload_add
+bool next_state_is_workstation
+bool complete_work_with_robot
+bool arriving_at_0

@@ -47,6 +47,42 @@ def get_action(cmd_idx):
 	return output_state
 
 #from cmd_idx with desired_states_array, set the goal position 
+def sense_environments():
+
+	# lookup = [
+		# {'name': 'wait', 'bits': 1},
+		# {'name': 'obstacle2', 'bits': 1},
+		# {'name': 'obstacle3', 'bits': 1},
+		# {'name': 'workload', 'bits': 5},
+		# {'name': 'complete_work_at_workstation', 'bits': 1},
+		# {'name': 'complete_dropoff_success', 'bits': 1},
+		# {'name': 'complete_dropoff_tries', 'bits': 2},
+		# {'name': 'r_state', 'bits': 3},
+		# {'name': 'workload_add', 'bits': 4},
+		# {'name': 'next_state_is_workstation', 'bits': 1},
+		# {'name': 'complete_work_with_robot', 'bits': 1},
+		# {'name': 'arriving_at_0', 'bits': 1},
+
+
+    [obstacle2 obstacle3 ] = check_obstacles()
+    workload=calcuate_workload()
+    complete_work_at_workstation()
+    complete_dropoff_success=True
+    complete_dropoff_tries=True
+    r_state =                  #0,1,2,3,4
+    workload_add=              #add 15
+    next_state_is_workstation=False
+    complete_work_with_robot=True
+    arriving_at_0=False
+
+
+
+
+
+
+
+
+    
 def generate_send_goal(cmd_idx):
 
 	if cmd_idx ==-1:

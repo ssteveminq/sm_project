@@ -1,7 +1,14 @@
+#!/usr/bin/env python
 import json 
 import random 
 import os
 import sys
+import roslib
+import actionlib
+import rospy
+import sm_project.msg
+from sm_project.msg import Slug_state
+from sm_project.msg import Sm_StateFeedback,Sm_StateResult, Sm_StateAction
 
 def clean(js):
     """Eliminate all terminal nodes and return."""
@@ -11,7 +18,6 @@ def clean(js):
             # accumulate list of terminal nodes and remove them from `js`
         terminal_nodes = []
         num_nodes = len(js['nodes'])
-
 
 
         for key, node in js['nodes'].items():
@@ -71,20 +77,51 @@ def variables_to_base10(node, name_and_bits):
 
 class Controller():
 
-    def __init__(self):
+    def __init__(self, name,wait=0.0):
         # 'with' is context block
         # 'r' is read mode
         # 'open' is a file handle and is being stored as f 
         # with open(file_name, 'r') as f :
             # self.file_content = json.load(f)
             # self.file_content = clean(self.file_content)
-
         self.file_name=''
         self.path_location=''
 
         self.num_nodes = 0 
         self.loadjsonfiles()
         self.name_and_bits = self.get_lookup()
+        self.SlugState=Slug_state()
+
+        #ros subscriber
+        sm_state_topic='sm/sm_states'
+        rospy.Subscriber(sm_state_topic,Slug_state,self.sm_state_callback)
+
+        #rosaction_server
+        self._feedback = Sm_StateFeedback()
+        self._result = Sm_StateResult()
+        self._action_name = name
+        self._as = actionlib.SimpleActionServer(self._action_name, Sm_StateAction, execute_cb=self.execute_cb, auto_start = False)
+        self._as.start()
+        rospy.loginfo('action_server_started')
+
+    def execute_cb(self, goal):
+        # helper variables
+        if self._as.is_preempt_requested():
+            rospy.loginfo('%s: Preempted')
+            self._as.set_preempted()
+
+        success = False
+        # print('save picture')
+        self._result.policy= 2
+        self._transitions=[4,1,23,1,24]
+        self._feedback.is_feasible= True
+        self._as.publish_feedback(self._feedback)
+        self._as.set_succeeded(self._result)
+        rospy.loginfo('action_server_executed') 
+
+    def sm_state_callback(self, msg):
+        rospy.loginfo('sm_states_updated')
+        self.SlugState=msg
 
 
     def simulate(self, node_init='0', num_steps=20):
@@ -107,7 +144,6 @@ class Controller():
 
             not_empty = 0
             
-
             node_num = str(random.choice(transition_options))
             while not_empty == 0:
                 next_node = self.file_content['nodes'][node_num] 
@@ -168,17 +204,12 @@ class Controller():
             ]
 
         return lookup
+    def listener(self,wait=0.0):
+        while not rospy.is_shutdown():
+            rospy.spin()
 
-
-def main(): 
+# def main(): 
     
-    if len(sys.argv)>1:
-        node_init=sys.argv[1]
-        sim_length=int(sys.argv[2])
-    else:
-        node_init ='0'
-        sim_length=int(10)
-
         # print(f"start node: {node_init}, simulation length: {sim_length}")
 
     # path_location = os.path.dirname(os.path.realpath(__file__))
@@ -187,8 +218,8 @@ def main():
     
     # delivery_lookup = get_lookup()
     # print(delivery_lookup)
-    delivery_sim = Controller()
-    var_list = delivery_sim.simulate(node_init, sim_length)
+    # delivery_sim = Controller()
+    # var_list = delivery_sim.simulate(node_init, sim_length)
     # var_list = delivery_sim.simulate(str(node_init), int(sim_length))
     # (node_dictionary, transition_dictionary) = delivery_sim.json_to_dictionary()
 
@@ -203,82 +234,18 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
 
+    rospy.init_node('slug_action_server')
 
+    if len(sys.argv)>1:
+        node_init=sys.argv[1]
+        sim_length=int(sys.argv[2])
+    else:
+        node_init ='0'
+        sim_length=int(10)
 
-
-    # # list of dictionaries
-    # park_lookup = [
-    #   {'name': 'o_state', 'bits': 4},
-    #   {'name': 'park', 'bits': 1},
-    #   {'name': 'a_state', 'bits': 4}
-    # ]
-
-    # park_file = '/home/formal/cyberphysical_systems/hw5/prob1/ctrl.json'
-    # park_sim = Controller(park_lookup, park_file)
-    # node_init = '0'
-    # park_sim.simulate(node_init, 50)
-
-    # list of dictionaries
-    # elevator_lookup = [
-    #   {'name': 'Call1', 'bits': 3},
-    #   # {'name': 'Call2', 'bits': 3},
-    #   {'name': 'Open', 'bits': 3},
-    #   {'name': 'Floor', 'bits': 2}
-    # ]
-
-    # elevator_lookup = [
-    #   {'name': 'Req0', 'bits': 1},
-    #   {'name': 'Req1', 'bits': 1},
-    #   {'name': 'Req2', 'bits': 1},
-    #   {'name': 'Req3', 'bits': 1},
-    #   {'name': 'Num_Req', 'bits': 2},
-    #   # {'name': 'Not_Req3', 'bits': 3},      
-    #   {'name': 'Open0', 'bits': 1},
-    #   {'name': 'Open1', 'bits': 1},
-    #   {'name': 'Open2', 'bits': 1},
-    #   {'name': 'Open3', 'bits': 1},
-    #   {'name': 'Floor', 'bits': 2}
-    # ]
-
-
-    # elevator_file = '/home/formal/cyberphysical_systems/hw5/prob3/elevator_deadlock.json'
-    # elevator_sim = Controller(elevator_lookup, elevator_file)
-    # node_init = '0'
-    # elevator_sim.simulate(node_init, 2)
-
-
-    # intersection_lookup = [
-    #   {'name': 'Start3', 'bits': 4},
-    #   {'name': 'Start4', 'bits': 4},
-    #   {'name': 'Start7', 'bits': 4},
-    #   {'name': 'Clear_o', 'bits': 1},
-    #   {'name': 'Init_Wait3', 'bits': 1},
-    #   {'name': 'Init_Wait4', 'bits': 1},
-    #   {'name': 'Init_Wait7', 'bits': 1},
-    #   {'name': 'C_state', 'bits': 4},
-    #   {'name': 'Clear_c', 'bits': 1}
-    # ]
-
-    # intersection_file = '/home/formal/cyberphysical_systems/hw5/prob2/ctrl_intersection.json'
-    # intersection_sim = Controller(intersection_lookup, intersection_file)
-    # node_init = '10'
-    # intersection_sim.simulate(node_init, 10)
-
-
-
+    slug_controller= Controller('Slug_Controller')
+    # slug_controller.
     
-    # dreamer_lookup = [
-    #   {'name': 'h_state', 'bits': 2},
-    #   {'name': 'h_closed', 'bits': 1},
-    #   {'name': 'r_state', 'bits': 2},
-    #   {'name': 'r_closed', 'bits': 1}
-    # ]
-
-    # dreamer_file = '/home/formal/cyberphysical_systems/hw5/two_player/ctrl.json'
-    # dreamer_sim = Controller(dreamer_lookup, dreamer_file)
-    # node_init = '0'
-    # var_list = dreamer_sim.simulate(node_init, 10)
-
-    # print var_list
+    # var_list = delivery_sim.simulate(node_init, sim_length)
+ 

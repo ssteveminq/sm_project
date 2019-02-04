@@ -25,8 +25,6 @@ import sys
 from slugmanager import Controller 
 
 
-slug_controller= Controller()
-
 
 def get_action(cmd_idx):
 
