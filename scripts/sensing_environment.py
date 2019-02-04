@@ -46,16 +46,24 @@ class Environment_Manager(object):
         # rospy.loginfo('global_pose_callback')
         robot_pos = msg.pose
         #Todo: change w.r.t robot poses
-        self.slug_msg.r_state = 2
+        self.slug_msg.r_state = 3
         
     def obstacle2_Callback(self,msg):
         # rospy.loginfo('obstacle2_callback')
-        self.slug_msg.obstacle2=msg.data
+        # self.slug_msg.obstacle2=int(msg.data)
+        if msg.data==True:
+            self.slug_msg.obstacle2=1
+        else:
+            self.slug_msg.obstacle2=0
         # msg.data
 
     def obstacle3_Callback(self,msg):
         # rospy.loginfo('obstacle3_callback')
-        self.slug_msg.obstacle3=msg.data
+        # self.slug_msg.obstacle3=int(msg.data)
+        if msg.data==True:
+            self.slug_msg.obstacle3=1
+        else:
+            self.slug_msg.obstacle3=0
 
     def calculate_statesvariables(self, time_duration):
         #calulate other variables in slug_states
@@ -70,14 +78,14 @@ class Environment_Manager(object):
         #arriving_at_0
         # rospy.loginfo('duration %d',int(time_duration))
         
-        self.slug_msg.wait=False
-        self.slug_msg.workload=time_duration*0.3
-        self.slug_msg.complete_work_at_workstation=False
+        self.slug_msg.wait=0
+        self.slug_msg.workload=18
+        self.slug_msg.complete_work_at_workstation=1
         self.slug_msg.complete_dropoff_tries=0
         self.slug_msg.workload_add=0
-        self.slug_msg.next_state_is_workstation=False
-        self.slug_msg.complete_work_with_robot=False
-        self.slug_msg.arriving_at_0=False
+        self.slug_msg.next_state_is_workstation=0
+        self.slug_msg.complete_work_with_robot=1
+        self.slug_msg.arriving_at_0=0
         
     
 

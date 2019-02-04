@@ -85,6 +85,7 @@ class Controller():
             # self.file_content = json.load(f)
             # self.file_content = clean(self.file_content)
         self.file_name=''
+        self.trans_name=''
         self.path_location=''
 
         self.num_nodes = 0 
@@ -102,7 +103,7 @@ class Controller():
         self._action_name = name
         self._as = actionlib.SimpleActionServer(self._action_name, Sm_StateAction, execute_cb=self.execute_cb, auto_start = False)
         self._as.start()
-        rospy.loginfo('action_server_started')
+        rospy.loginfo('action_server_started:%s', self._action_name)
 
     def execute_cb(self, goal):
         # helper variables
@@ -110,17 +111,78 @@ class Controller():
             rospy.loginfo('%s: Preempted')
             self._as.set_preempted()
 
+        r=rospy.Rate(1)
+
         success = False
         # print('save picture')
-        self._result.policy= 2
-        self._transitions=[4,1,23,1,24]
-        self._feedback.is_feasible= True
-        self._as.publish_feedback(self._feedback)
-        self._as.set_succeeded(self._result)
         rospy.loginfo('action_server_executed') 
+        self._result.policy= self.get_policy()
+        self._transitions=self.transition_options
+        self._feedback.is_feasible= True
+        rospy.loginfo('action_server_executed') 
+        rospy.loginfo('policy:%d', self._result.policy) 
+        self._as.set_succeeded(self._result)
+        self._as.publish_feedback(self._feedback)
+
+        r.sleep()
+        # rospy.loginfo('policy:%d , self._result.policy') 
+
+    def get_policy(self):
+        self.Slug_state_to_Dictionary()
+
+        for key, node in self.nodes_dict.items():
+
+            if self.nodes_dict[key] == self.cur_dictionary:
+                print "selected key", key 
+                self.transition_options = self.transitions_dict[key]
+                print "transition_options", self.transition_options
+                self.random_nextchoice =random.choice(self.transition_options) 
+                print "next node", (self.random_nextchoice)
+                return self.random_nextchoice
+                self.policy_r_state= self.nodes_dict[key]['r_state']
+                self.policy_arriving_at_0_= self.nodes_dict[key]['next_state_is_workstation']
+                self.policy_next_state_is_workstation= self.nodes_dict[key]['arriving_at_0']
+
+        
+        print "Cannot find the node from states"
+        exit()
+
+
+    def Slug_state_to_Dictionary(self):
+        #self.SlugState ==> dictionary check`
+        self.cur_dictionary = {}
+        self.cur_dictionary['wait'] = self.SlugState.wait
+        self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2
+        self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
+        self.cur_dictionary['workload'] = self.SlugState.workload
+        self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
+        self.cur_dictionary['complete_dropoff_success'] = self.SlugState.complete_dropoff_success
+        self.cur_dictionary['complete_dropoff_tries'] = self.SlugState.complete_dropoff_tries
+        self.cur_dictionary['r_state'] = self.SlugState.r_state
+        self.cur_dictionary['workload_add'] = self.SlugState.workload_add
+        self.cur_dictionary['next_state_is_workstation'] = self.SlugState.next_state_is_workstation
+        self.cur_dictionary['complete_work_with_robot'] = self.SlugState.complete_work_with_robot
+        self.cur_dictionary['arriving_at_0'] = self.SlugState.arriving_at_0
+
+        # self.cur_dictionary = {}
+        # self.cur_dictionary['wait'] = str(self.SlugState.wait)
+        # self.cur_dictionary['obstacle2'] = str(self.SlugState.obstacle2)
+        # self.cur_dictionary['obstacle3'] = str(self.SlugState.obstacle3)
+        # self.cur_dictionary['workload'] = str(self.SlugState.workload)
+        # self.cur_dictionary['complete_work_at_workstation'] = str(self.SlugState.complete_work_at_workstation)
+        # self.cur_dictionary['complete_dropoff_success'] = str(self.SlugState.complete_dropoff_success)
+        # self.cur_dictionary['complete_dropoff_tries'] = str(self.SlugState.complete_dropoff_tries)
+        # self.cur_dictionary['r_state'] = str(self.SlugState.r_state)
+        # self.cur_dictionary['workload_add'] = str(self.SlugState.workload_add)
+        # self.cur_dictionary['next_state_is_workstation'] = str(self.SlugState.next_state_is_workstation)
+        # self.cur_dictionary['complete_work_with_robot'] = str(self.SlugState.complete_work_with_robot)
+        # self.cur_dictionary['arriving_at_0'] = str(self.SlugState.arriving_at_0)
+
+        print self.cur_dictionary
+
 
     def sm_state_callback(self, msg):
-        rospy.loginfo('sm_states_updated')
+        # rospy.loginfo('sm_states_updated')
         self.SlugState=msg
 
 
@@ -174,16 +236,26 @@ class Controller():
 
     def loadjsonfiles(self):
         self.path_location = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        self.file_name = os.path.join(self.path_location, 'config', 'ctrl.json')
+        self.file_name = os.path.join(self.path_location, 'config', 'node_dictionary.json')
+        self.trans_file_name = os.path.join(self.path_location, 'config', 'transition_dictionary.json')
+
+        with open(self.file_name, 'r') as f :
+            self.nodes_dict=json.load(f)
+
+        with open(self.trans_file_name, 'r') as f :
+            self.transitions_dict=json.load(f)
+
+        # self.file_name = os.path.join(self.path_location, 'config', 'ctrl.json')
         # print(f"path_location:{self.path_location}")
         # 'with' is context block
         # 'r' is read mode
         # 'open' is a file handle and is being stored as f 
-        with open(self.file_name, 'r') as f :
-            self.file_content = json.load(f)
-            self.file_content = clean(self.file_content)
 
-        self.num_nodes = len(self.file_content['nodes'])
+        # with open(self.file_name, 'r') as f :
+        #     self.file_content = json.load(f)
+        #     self.file_content = clean(self.file_content)
+
+        #self.num_nodes = len(self.file_content['nodes'])
 
 
     def get_lookup(self):
@@ -204,9 +276,9 @@ class Controller():
             ]
 
         return lookup
-    def listener(self,wait=0.0):
-        while not rospy.is_shutdown():
-            rospy.spin()
+    # def listener(self,wait=0.0):
+        # while not rospy.is_shutdown():
+            # rospy.spin()
 
 # def main(): 
     
@@ -231,11 +303,9 @@ class Controller():
 
 
 
-    
-
 if __name__ == '__main__':
 
-    rospy.init_node('slug_action_server')
+    rospy.init_node('slug_action')
 
     if len(sys.argv)>1:
         node_init=sys.argv[1]
@@ -244,8 +314,8 @@ if __name__ == '__main__':
         node_init ='0'
         sim_length=int(10)
 
-    slug_controller= Controller('Slug_Controller')
-    # slug_controller.
+    slug_controller= Controller("slug_controller")
+    # rospy.spin()
     
     # var_list = delivery_sim.simulate(node_init, sim_length)
  
