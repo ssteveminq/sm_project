@@ -13,7 +13,7 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 from std_msgs.msg import String
-from std_msgs.msg import Int8MultiArray
+from std_msgs.msg import Int32MultiArray
 from std_msgs.msg import Bool
 from sm_project.msg import Slug_state
 import std_msgs.msg
@@ -24,6 +24,13 @@ import os
 class Environment_Manager(object):
     def __init__(self, wait=0.0):
 
+
+        # self.states_pub=rospy.Publisher("/sm/sm_states",Sm_states,queue_size=50)
+        self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
+        self.slug_msg = Slug_state()
+        self.Initial_time = rospy.get_time()
+
+
         obstacle2_topic="/obstacle2_Is_Occupied"
         rospy.Subscriber(obstacle2_topic, Bool, self.obstacle2_Callback)
         obstacle3_topic="/obstacle3_Is_Occupied"
@@ -31,12 +38,10 @@ class Environment_Manager(object):
         robot_pose_topic="global_pose"
         rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
         task_sm_topic='SM/current_state'
-        rospy.Subscriber(task_sm_topic,Int8MultiArray,self.Task_SM_Callback)
+        rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
 
-        # self.states_pub=rospy.Publisher("/sm/sm_states",Sm_states,queue_size=50)
-        self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
-        self.slug_msg = Slug_state()
-        self.Initial_time = rospy.get_time()
+        # initial workload
+        self.slug_msg.workload=16
 
     def publish_slug_state(self):
         curr_time=rospy.get_time()
@@ -48,13 +53,13 @@ class Environment_Manager(object):
         # rospy.loginfo('global_pose_callback')
         robot_pos = msg.pose
         #Todo: change w.r.t robot poses
-        if robot_pos.pos.position.y <0.2:
+        if robot_pos.position.y <0.2:
             self.slug_msg.r_state = 1
-        elif robot_pos.pos.position.y <-0.49:
+        elif robot_pos.position.y <-0.49:
             self.slug_msg.r_state = 2
-        elif robot_pos.pos.position.y <-0.99:
+        elif robot_pos.position.y <-0.99:
             self.slug_msg.r_state = 3
-        elif robot_pos.pos.position.y <-2.5: 
+        elif robot_pos.position.y <-2.5: 
             self.slug_msg.r_state = 4
         
     def obstacle2_Callback(self,msg):
@@ -91,24 +96,48 @@ class Environment_Manager(object):
         #arriving_at_0
         # rospy.loginfo('duration %d',int(time_duration))
         
-        #calucate workload
+        #calculate workload
+        previous_workload = self.slug_msg.workload
         self.slug_msg.workload=self.slug_msg.workload-int(time_duration%10)
 
+        if previous_workload == self.slug_msg.workload:
+            self.slug_msg.workload_stays_constant = 1
+        else: 
+            self.slug_msg.workload_stays_constant = 0
 
-        self.slug_msg.wait=0
 
-        self.slug_msg.complete_work_at_workstation=1
+        # calculate if waiting
+        if self.slug_msg.workload > 0:
+            self.slug_msg.wait=0
+        else: 
+            self.slug_msg.wait=1
+
+        # todo: complete dropoff tries
         self.slug_msg.complete_dropoff_tries=0
+
+
+        # todo: complete dropoff success
+        self.slug_msg.complete_dropoff_tries=0
+
+        self.slug_msg.workload_stays_constant=0
+        
+        # placeholders for controllable variables. Not used
+        self.slug_msg.complete_work_at_workstation=0
         self.slug_msg.workload_add=0
         self.slug_msg.next_state_is_workstation=0
-        self.slug_msg.complete_work_with_robot=1
+        self.slug_msg.complete_work_with_robot=0
         self.slug_msg.arriving_at_0=0
-        self.slug_msg.workload_stays_constant=0
 
-        if self.complete_work_with_robot==1 and self.slug_msg.r_state = 1:
-            self.slug_msg.r_state=0
-        
+        if self.slug_msg.r_state == 4:
+            self.slug_msg.complete_work_with_robot=1
+        elif self.slug_msg.complete_work_with_robot==1 and self.slug_msg.r_state != 1:
+            self.slug_msg.complete_work_with_robot=1
+        else: 
+            self.slug_msg.complete_work_with_robot=0
     
+        
+        if self.slug_msg.complete_work_with_robot==1 and self.slug_msg.r_state == 1:
+            self.slug_msg.r_state=0
 
     def listener(self,wait=0.0):
         # rospy.spin()

@@ -22,7 +22,7 @@ def controller_action_client():
 	# Waits for the server to finish performing the action.
 	client.wait_for_result()
         
-        rospy.loginfo("Start action")
+    rospy.loginfo("Start action")
 
 	# Prints out the result of executing the action
 	return client.get_result()  # A FibonacciResult
