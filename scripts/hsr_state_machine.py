@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import actionlib
+import actionlib
+from sm_project.msg import Sm_StateAction, Sm_StateGoal
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -75,34 +77,39 @@ def sense_environments():
     complete_work_with_robot=True
     arriving_at_0=False
 
-
-
-
-
-
-
-
     
 def generate_send_goal(cmd_idx):
 
 	if cmd_idx ==-1:
 		return GoalStatus.SUCCEEDED
-
-	goal_y = 0.2
+	goal_x = -1.0
+	goal_y = -0.0
 	goal_yaw = 0.0  
 
-	cmd_state = desired_states[cmd_idx]
+	#call slug action server to get policy
+	slug_goal = Sm_StateGoal(start=True)
+	# Sends the goal to the action server.
+	slug_cli.send_goal(slug_goal)
+	# Waits for the server to finish performing the action.
+	slug_cli.wait_for_result()
+    slug_result = slug_cli.get_result()    
+    cmd_state = slug_result.policy
+
+
+	# cmd_state = desired_states[cmd_idx]
 
 	if cmd_state == '0':
-		goal_x = 6.0
+		goal_y = -0.0
 	elif cmd_state == '1':
-		goal_x = 5.5
+		goal_y = -0.0
 	elif cmd_state == '2':
-		goal_x = 5.0
+		goal_y = -0.5
 	elif cmd_state == '3':
-		goal_x = 4.5
+		goal_y = -1.0
+	elif cmd_state == '4':
+		goal_y = -2.0
 	else:  
-		goal_x = 4.0
+		goal_y = -2.0
 
 	# fill ROS message
 	pose = PoseStamped()
@@ -161,7 +168,10 @@ def track_motion_during_duration(counter_in):
 
 
         iterator=0
+
  	battery_msg = rospy.wait_for_message('/hsrb/battery_state', BatteryState)
+ 	finished_time = rospy.get_time()
+ 	State_msg.data.append(finished_time)
 	State_msg.data.append(battery_msg.power)
 	State_msg.data.append(int(desired_states[original_cmd_idx]))
 	State_pub.publish(State_msg)
@@ -291,6 +301,8 @@ class S_4(smach.State):
 			return 'end_demo'
 
 
+
+
 tts=whole_body = None
 
 while not rospy.is_shutdown():
@@ -309,33 +321,33 @@ while not rospy.is_shutdown():
 # rospy.init_node('test_move')
 
 #===========Read csv==============
-f = open('../csv_parser/states_and_vals.csv', 'rt')
-reader = csv.reader(f)
-row_count = sum(1 for row in reader)
-f.seek(0)
+# f = open('../csv_parser/states_and_vals.csv', 'rt')
+# reader = csv.reader(f)
+# row_count = sum(1 for row in reader)
+# f.seek(0)
 
-col_count = len(next(reader))
-# print "columns"
-# print col_count
+# col_count = len(next(reader))
+# # print "columns"
+# # print col_count
 
-f.seek(0)
-data = [row for row in reader] # list comprehension 
-f.close()
-string_col = data[0]
-desired_states = []
+# f.seek(0)
+# data = [row for row in reader] # list comprehension 
+# f.close()
+# string_col = data[0]
+# desired_states = []
 
-for col in range(0, col_count):
-	if (string_col[col] == 'robot_state'):
-		robot_state_col = col 
+# for col in range(0, col_count):
+# 	if (string_col[col] == 'robot_state'):
+# 		robot_state_col = col 
 
-for row1 in range(1,row_count):
-	this_row = data[row1]
-	desired_states.extend([this_row[robot_state_col]])
+# for row1 in range(1,row_count):
+# 	this_row = data[row1]
+# 	desired_states.extend([this_row[robot_state_col]])
 
-desired_states = np.array(desired_states)
-desired_states.resize(desired_states.shape[0])
+# desired_states = np.array(desired_states)
+# desired_states.resize(desired_states.shape[0])
 
-print desired_states
+# print desired_states
 
 # exit()
 
@@ -345,10 +357,13 @@ tts.say("Hello operator! I finished reading csv file")
 rospy.sleep(2)
 
 # initialize action client
+
 cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
+slug_cli = actionlib.SimpleActionClient('slug_controller', Sm_StateAction)
 
 # wait for the action server to establish connection
 cli.wait_for_server()
+slug_cli.wait_for_server()
 
 
 if __name__=='__main__':

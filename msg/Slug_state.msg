@@ -10,4 +10,5 @@ int8 r_state
 int8 workload_add
 int8 next_state_is_workstation
 int8 complete_work_with_robot
+int8 workload_stays_constant
 int8 arriving_at_0

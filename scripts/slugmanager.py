@@ -10,68 +10,68 @@ import sm_project.msg
 from sm_project.msg import Slug_state
 from sm_project.msg import Sm_StateFeedback,Sm_StateResult, Sm_StateAction
 
-def clean(js):
-    """Eliminate all terminal nodes and return."""
+# def clean(js):
+#     """Eliminate all terminal nodes and return."""
 
-    while True:
+#     while True:
 
-            # accumulate list of terminal nodes and remove them from `js`
-        terminal_nodes = []
-        num_nodes = len(js['nodes'])
+#             # accumulate list of terminal nodes and remove them from `js`
+#         terminal_nodes = []
+#         num_nodes = len(js['nodes'])
 
 
-        for key, node in js['nodes'].items():
-            if not node['trans']:
-                terminal_nodes.append(int(key))
+#         for key, node in js['nodes'].items():
+#             if not node['trans']:
+#                 terminal_nodes.append(int(key))
 
-        # remove references to terminal nodes
-        for key, node in js['nodes'].items():
-            node['trans'] = [t for t in node['trans'] if t not in terminal_nodes]
+#         # remove references to terminal nodes
+#         for key, node in js['nodes'].items():
+#             node['trans'] = [t for t in node['trans'] if t not in terminal_nodes]
 
-        for t in terminal_nodes:
-            del js['nodes'][str(t)]
+#         for t in terminal_nodes:
+#             del js['nodes'][str(t)]
 
         
-        if not terminal_nodes:
-            return js
+#         if not terminal_nodes:
+#             return js
 
-def variables_to_base10(node, name_and_bits):
+# def variables_to_base10(node, name_and_bits):
 
-    state_binary = node['state']
-    count = 0 
+#     state_binary = node['state']
+#     count = 0 
 
-    list_local = []
-    variable_dictionary = {}
+#     list_local = []
+#     variable_dictionary = {}
 
 
-    for j in name_and_bits:
+#     for j in name_and_bits:
 
-        # j is equal to a dictionary
-        name = j['name']
-        bits = j['bits']
+#         # j is equal to a dictionary
+#         name = j['name']
+#         bits = j['bits']
 
-        # create array slice from an array of numbers
-        bin_string = state_binary[count:count+bits] # grab the section 
-        bin_string = bin_string[::-1] # reverse the section
-        # make an array of strings 
-        bin_string = [str(str_var) for str_var in bin_string] 
-        # make into string
-        bin_string = ''.join(bin_string)
+#         # create array slice from an array of numbers
+#         bin_string = state_binary[count:count+bits] # grab the section 
+#         bin_string = bin_string[::-1] # reverse the section
+#         # make an array of strings 
+#         bin_string = [str(str_var) for str_var in bin_string] 
+#         # make into string
+#         bin_string = ''.join(bin_string)
 
-        val_base_10 = int(bin_string,2)
+#         val_base_10 = int(bin_string,2)
 
-        # print(f"{name}:{val_base_10}")
+#         # print(f"{name}:{val_base_10}")
 
          
 
-        list_local.append(val_base_10)
+#         list_local.append(val_base_10)
         
-        variable_dictionary[name] = val_base_10
-        transitions = node['trans']
-        count+=bits 
+#         variable_dictionary[name] = val_base_10
+#         transitions = node['trans']
+#         count+=bits 
 
 
-    return list_local, variable_dictionary, transitions 
+#     return list_local, variable_dictionary, transitions 
 
 
 
@@ -105,6 +105,8 @@ class Controller():
         self._as.start()
         rospy.loginfo('action_server_started:%s', self._action_name)
 
+        self.node_num='0'
+
     def execute_cb(self, goal):
         # helper variables
         if self._as.is_preempt_requested():
@@ -130,6 +132,16 @@ class Controller():
     def get_policy(self):
         self.Slug_state_to_Dictionary()
 
+        current_node_states = nodes_dict[self.node_num]
+
+        transition_options = [str(i) for i in self.transitions_dict[node_num]]
+        self.node_num = (random.choice(transition_options))
+
+        # Command robot to move 
+        robot_commands = {}
+        for c in commands:
+            robot_commands[c] = nodes_dict[node_num][c]
+
         for key, node in self.nodes_dict.items():
 
             if self.nodes_dict[key] == self.cur_dictionary:
@@ -153,7 +165,7 @@ class Controller():
         self.cur_dictionary = {}
         self.cur_dictionary['wait'] = self.SlugState.wait
         self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2
-        self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
+        #self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
         self.cur_dictionary['workload'] = self.SlugState.workload
         self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
         self.cur_dictionary['complete_dropoff_success'] = self.SlugState.complete_dropoff_success
@@ -163,20 +175,7 @@ class Controller():
         self.cur_dictionary['next_state_is_workstation'] = self.SlugState.next_state_is_workstation
         self.cur_dictionary['complete_work_with_robot'] = self.SlugState.complete_work_with_robot
         self.cur_dictionary['arriving_at_0'] = self.SlugState.arriving_at_0
-
-        # self.cur_dictionary = {}
-        # self.cur_dictionary['wait'] = str(self.SlugState.wait)
-        # self.cur_dictionary['obstacle2'] = str(self.SlugState.obstacle2)
-        # self.cur_dictionary['obstacle3'] = str(self.SlugState.obstacle3)
-        # self.cur_dictionary['workload'] = str(self.SlugState.workload)
-        # self.cur_dictionary['complete_work_at_workstation'] = str(self.SlugState.complete_work_at_workstation)
-        # self.cur_dictionary['complete_dropoff_success'] = str(self.SlugState.complete_dropoff_success)
-        # self.cur_dictionary['complete_dropoff_tries'] = str(self.SlugState.complete_dropoff_tries)
-        # self.cur_dictionary['r_state'] = str(self.SlugState.r_state)
-        # self.cur_dictionary['workload_add'] = str(self.SlugState.workload_add)
-        # self.cur_dictionary['next_state_is_workstation'] = str(self.SlugState.next_state_is_workstation)
-        # self.cur_dictionary['complete_work_with_robot'] = str(self.SlugState.complete_work_with_robot)
-        # self.cur_dictionary['arriving_at_0'] = str(self.SlugState.arriving_at_0)
+        self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
 
         print self.cur_dictionary
 
@@ -263,7 +262,7 @@ class Controller():
         lookup = [
             {'name': 'wait', 'bits': 1},
             {'name': 'obstacle2', 'bits': 1},
-            {'name': 'obstacle3', 'bits': 1},
+            #{'name': 'obstacle3', 'bits': 1},
             {'name': 'workload', 'bits': 5},
             {'name': 'complete_work_at_workstation', 'bits': 1},
             {'name': 'complete_dropoff_success', 'bits': 1},
@@ -272,6 +271,7 @@ class Controller():
             {'name': 'workload_add', 'bits': 4},
             {'name': 'next_state_is_workstation', 'bits': 1},
             {'name': 'complete_work_with_robot', 'bits': 1},
+            {'name': 'workload_stays_constant','bits': 1},
             {'name': 'arriving_at_0', 'bits': 1},
             ]
 

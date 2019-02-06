@@ -13,7 +13,7 @@ def controller_action_client():
 	# listening for goals.
         # rospy.sleep(1.0)
 	# print("wait for server")
-        client.wait_for_server()
+    client.wait_for_server()
 	# print("wait for server")
 	# Creates a goal to send to the action server.
 	goal = Sm_StateGoal(start=True)

@@ -13,8 +13,8 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 from std_msgs.msg import String
+from std_msgs.msg import Int8MultiArray
 from std_msgs.msg import Bool
-from sm_msgs.msg import Sm_states
 from sm_project.msg import Slug_state
 import std_msgs.msg
 
@@ -30,6 +30,8 @@ class Environment_Manager(object):
         rospy.Subscriber(obstacle3_topic, Bool, self.obstacle3_Callback)
         robot_pose_topic="global_pose"
         rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
+        task_sm_topic='SM/current_state'
+        rospy.Subscriber(task_sm_topic,Int8MultiArray,self.Task_SM_Callback)
 
         # self.states_pub=rospy.Publisher("/sm/sm_states",Sm_states,queue_size=50)
         self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
@@ -46,7 +48,14 @@ class Environment_Manager(object):
         # rospy.loginfo('global_pose_callback')
         robot_pos = msg.pose
         #Todo: change w.r.t robot poses
-        self.slug_msg.r_state = 3
+        if robot_pos.pos.position.y <0.2:
+            self.slug_msg.r_state = 1
+        elif robot_pos.pos.position.y <-0.49:
+            self.slug_msg.r_state = 2
+        elif robot_pos.pos.position.y <-0.99:
+            self.slug_msg.r_state = 3
+        elif robot_pos.pos.position.y <-2.5: 
+            self.slug_msg.r_state = 4
         
     def obstacle2_Callback(self,msg):
         # rospy.loginfo('obstacle2_callback')
@@ -65,6 +74,10 @@ class Environment_Manager(object):
         else:
             self.slug_msg.obstacle3=0
 
+    def Task_SM_Callback(self,msg):
+         self.Initial_time = rospy.get_time()
+
+
     def calculate_statesvariables(self, time_duration):
         #calulate other variables in slug_states
         #obstacles are automatically updated from others
@@ -78,14 +91,22 @@ class Environment_Manager(object):
         #arriving_at_0
         # rospy.loginfo('duration %d',int(time_duration))
         
+        #calucate workload
+        self.slug_msg.workload=self.slug_msg.workload-int(time_duration%10)
+
+
         self.slug_msg.wait=0
-        self.slug_msg.workload=18
+
         self.slug_msg.complete_work_at_workstation=1
         self.slug_msg.complete_dropoff_tries=0
         self.slug_msg.workload_add=0
         self.slug_msg.next_state_is_workstation=0
         self.slug_msg.complete_work_with_robot=1
         self.slug_msg.arriving_at_0=0
+        self.slug_msg.workload_stays_constant=0
+
+        if self.complete_work_with_robot==1 and self.slug_msg.r_state = 1:
+            self.slug_msg.r_state=0
         
     
 
