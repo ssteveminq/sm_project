@@ -14,81 +14,10 @@ from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import PoseStamped
 
-# def clean(js):
-#     """Eliminate all terminal nodes and return."""
-
-#     while True:
-
-#             # accumulate list of terminal nodes and remove them from `js`
-#         terminal_nodes = []
-#         num_nodes = len(js['nodes'])
-
-
-#         for key, node in js['nodes'].items():
-#             if not node['trans']:
-#                 terminal_nodes.append(int(key))
-
-#         # remove references to terminal nodes
-#         for key, node in js['nodes'].items():
-#             node['trans'] = [t for t in node['trans'] if t not in terminal_nodes]
-
-#         for t in terminal_nodes:
-#             del js['nodes'][str(t)]
-
-		
-#         if not terminal_nodes:
-#             return js
-
-# def variables_to_base10(node, name_and_bits):
-
-#     state_binary = node['state']
-#     count = 0 
-
-#     list_local = []
-#     variable_dictionary = {}
-
-
-#     for j in name_and_bits:
-
-#         # j is equal to a dictionary
-#         name = j['name']
-#         bits = j['bits']
-
-#         # create array slice from an array of numbers
-#         bin_string = state_binary[count:count+bits] # grab the section 
-#         bin_string = bin_string[::-1] # reverse the section
-#         # make an array of strings 
-#         bin_string = [str(str_var) for str_var in bin_string] 
-#         # make into string
-#         bin_string = ''.join(bin_string)
-
-#         val_base_10 = int(bin_string,2)
-
-#         # print(f"{name}:{val_base_10}")
-
-		 
-
-#         list_local.append(val_base_10)
-		
-#         variable_dictionary[name] = val_base_10
-#         transitions = node['trans']
-#         count+=bits 
-
-
-#     return list_local, variable_dictionary, transitions 
-
-
 
 class Controller():
 
 	def __init__(self, name,wait=0.0):
-
-		# 'with' is context block
-		# 'r' is read mode
-		# 'open' is a file handle and is being stored as f 
-		# with open(file_name, 'r') as f :
-			# self.file_content = json.load(f)
-			# self.file_content = clean(self.file_content)
 
 		self.file_name=''
 		self.trans_name=''
@@ -100,7 +29,7 @@ class Controller():
 
 		# self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
 		self.SlugState = Slug_state()
-		self.Initial_time = rospy.get_time()
+		
 
 		#ros subscriber
 		# sm_state_topic='sm/sm_states'
@@ -113,13 +42,14 @@ class Controller():
 		robot_pose_topic="global_pose"
 		rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
 		task_sm_topic='SM/current_state'
-		rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
+		#rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
 
 		# initial workload
 		self.previous_workload=17
 		self.SlugState.workload=16
 		self.policy_workload_add_previous=0
 		self.first_move=True  
+		self.remainder=0
 
 
 		#rosaction_server
@@ -131,6 +61,7 @@ class Controller():
 		rospy.loginfo('action_server_started:%s', self._action_name)
 
 		self.node_num='0'
+		self.prev_node_num=self.node_num
 
 	def execute_cb(self, goal):
 		print "execute_cb"
@@ -144,9 +75,13 @@ class Controller():
 		success = False
 		# print('save picture')
 
+		if self.first_move==True : 
+			self.Initial_time = rospy.get_time()
+
 		curr_time=rospy.get_time()
 		duration = int(curr_time -self.Initial_time)
 		self.calculate_statesvariables(duration)
+		self.Initial_time = curr_time
 
 		rospy.loginfo('action_server_executed') 
 		self._result.policy= self.get_policy()
@@ -172,28 +107,34 @@ class Controller():
 		for states in environment:
 			environment_states[states] = self.cur_dictionary[states]
 
-		self.transition_options = [str(i) for i in self.transitions_dict[self.node_num]]
+		self.transition_options = [str(i) for i in self.transitions_dict[self.prev_node_num]]
+
+		print "transition options"
+		print self.transition_options
 
 		if self.first_move==False: 
 
 			success = False 
 			while success == False: 
 
-				for node_options in self.transition_options:
-						
+				for node_options in self.transition_options:					
 					if all(self.nodes_dict[node_options][key] == environment_states[key] for key in environment):
 						self.node_num = node_options
-						# print "SELECTED OPTION", node_num
 						success = True 
+	
 
-				print "no match"
+
 				match = False  
 				if success == False: 
+					print "no match"
+					exit()
+					
 					for key, node in self.nodes_dict.items():
 						if self.nodes_dict[key] == self.cur_dictionary:
 							print "NO MATCH"
 							      
 							print "selected key", key 
+
 							
 							self.node_num = key 
 
@@ -207,9 +148,12 @@ class Controller():
 		else: 
 			self.first_move = False  
 
+		# keep track of where robot was
+		self.prev_node_num=self.node_num
 		# where to go next
 		self.transition_options = [str(i) for i in self.transitions_dict[self.node_num]]
 		self.node_num=(random.choice(self.transition_options)) 
+		print "self.node_num ", self.node_num 
 
 		# command robot state 
 		print "next state", self.nodes_dict[self.node_num]['r_state']
@@ -221,28 +165,55 @@ class Controller():
 		print "Slug_state_to_Dictionary"
 		#self.SlugState ==> dictionary check`
 
+
 		self.cur_dictionary = {}
-		self.cur_dictionary['wait'] = self.SlugState.wait
-		self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2
+		self.cur_dictionary['wait'] = self.nodes_dict[self.node_num]['wait']
+		self.cur_dictionary['obstacle2'] = self.nodes_dict[self.node_num]['obstacle2']
 		#self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
 		self.cur_dictionary['workload'] = self.SlugState.workload
 		self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
-		self.cur_dictionary['complete_dropoff_success'] = self.SlugState.complete_dropoff_success
-		self.cur_dictionary['complete_dropoff_tries'] = self.SlugState.complete_dropoff_tries
+		self.cur_dictionary['complete_dropoff_success'] = self.nodes_dict[self.node_num]['complete_dropoff_success']
+		self.cur_dictionary['complete_dropoff_tries'] = self.nodes_dict[self.node_num]['complete_dropoff_tries']
 
 		# todo: check r_state properly
-		self.cur_dictionary['r_state'] = self.SlugState.r_state
+		self.cur_dictionary['r_state'] = self.nodes_dict[self.node_num]['r_state']
 
-		self.cur_dictionary['workload_add'] = self.policy_workload_add
-		self.cur_dictionary['next_state_is_workstation'] = self.policy_next_state_is_workstation
-		self.cur_dictionary['complete_work_with_robot'] = self.policy_complete_work_with_robot
+		self.cur_dictionary['workload_add'] = self.nodes_dict[self.node_num]['workload_add']
+		self.cur_dictionary['next_state_is_workstation'] = self.nodes_dict[self.node_num]['next_state_is_workstation']
+		self.cur_dictionary['complete_work_with_robot'] = self.nodes_dict[self.node_num]['complete_work_with_robot']
 
 		if self.policy_complete_work_with_robot != self.SlugState.complete_work_with_robot:
 			print "work with robot tracking error"
 			exit()
 
-		self.cur_dictionary['arriving_at_0'] = self.policy_arriving_at_0
+		self.cur_dictionary['arriving_at_0'] = self.nodes_dict[self.node_num]['arriving_at_0']
 		self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
+
+
+		# Uncomment below for real implementation
+
+		# self.cur_dictionary = {}
+		# self.cur_dictionary['wait'] = self.SlugState.wait
+		# self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2
+		# #self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
+		# self.cur_dictionary['workload'] = self.SlugState.workload
+		# self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
+		# self.cur_dictionary['complete_dropoff_success'] = self.SlugState.complete_dropoff_success
+		# self.cur_dictionary['complete_dropoff_tries'] = self.SlugState.complete_dropoff_tries
+
+		# # todo: check r_state properly
+		# self.cur_dictionary['r_state'] = self.SlugState.r_state
+
+		# self.cur_dictionary['workload_add'] = self.policy_workload_add
+		# self.cur_dictionary['next_state_is_workstation'] = self.policy_next_state_is_workstation
+		# self.cur_dictionary['complete_work_with_robot'] = self.policy_complete_work_with_robot
+
+		# if self.policy_complete_work_with_robot != self.SlugState.complete_work_with_robot:
+		# 	print "work with robot tracking error"
+		# 	exit()
+
+		# self.cur_dictionary['arriving_at_0'] = self.policy_arriving_at_0
+		# self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
 
 		print self.cur_dictionary
 
@@ -386,9 +357,9 @@ class Controller():
 		else:
 			self.SlugState.obstacle3=0
 
-	def Task_SM_Callback(self,msg):
+	#def Task_SM_Callback(self,msg):
 		# self.Initial_time = msg.data[0]
-		self.Initial_time = rospy.get_time()
+		#self.Initial_time = rospy.get_time()
 
 
 	def calculate_statesvariables(self, time_duration):
@@ -404,15 +375,19 @@ class Controller():
 		# todo: sense the robot state
 		self.SlugState.r_state=self.policy_r_state
 
+		print "time_duration",int(time_duration)+self.remainder
+		print "int(subtraction_amount)", int( (time_duration+self.remainder) / 10)
+
+
 		print "self.SlugState.workload", self.SlugState.workload
-		print "time_duration",time_duration
-		print "int(time_duration%10)", int(time_duration/10)
 
 		#calculate workload
 		if self.SlugState.r_state != 4:
-			self.SlugState.workload=self.SlugState.workload-int(time_duration/10)
+			self.SlugState.workload=self.SlugState.workload-int( (time_duration+self.remainder) / 10)
+			self.remainder = int( (time_duration+self.remainder) % 10)
 		else: 
 			self.SlugState.workload=self.SlugState.workload+self.policy_workload_add_previous
+			self.remainder=0
 
 		print "self.SlugState.workload", self.SlugState.workload
 
@@ -421,6 +396,13 @@ class Controller():
 			self.SlugState.workload_stays_constant = 1
 		else: 
 			self.SlugState.workload_stays_constant = 0
+
+		if self.SlugState.workload < self.previous_workload and self.SlugState.r_state != 4:
+			self.SlugState.complete_work_at_workstation = 1
+		elif self.SlugState.complete_work_at_workstation == 1 and self.SlugState.r_state != 4:
+			self.SlugState.complete_work_at_workstation = 1
+		else: 
+			self.SlugState.complete_work_at_workstation = 0
 
 
 		# calculate if waiting

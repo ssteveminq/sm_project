@@ -40,7 +40,7 @@ class Test_Transitions(object):
 		# rospy.spin()
 		while not rospy.is_shutdown():
 			self.publish_fake_SM_state()
-			rospy.Rate(0.1).sleep()
+			rospy.Rate(0.14).sleep()
 
 
 if __name__ == '__main__':
