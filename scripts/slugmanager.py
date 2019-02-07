@@ -119,6 +119,7 @@ class Controller():
 		self.previous_workload=17
 		self.SlugState.workload=16
 		self.policy_workload_add_previous=0
+		self.first_move=True  
 
 
 		#rosaction_server
@@ -173,33 +174,38 @@ class Controller():
 
 		self.transition_options = [str(i) for i in self.transitions_dict[self.node_num]]
 
-		success = False 
-		while success == False: 
+		if self.first_move==False: 
 
-			for node_options in self.transition_options:
-					
-				if all(self.nodes_dict[node_options][key] == environment_states[key] for key in environment):
-					self.node_num = node_options
-					# print "SELECTED OPTION", node_num
-					success = True 
+			success = False 
+			while success == False: 
 
-			print "no match"
-			match = False  
-			if success == False: 
-				for key, node in self.nodes_dict.items():
-					if self.nodes_dict[key] == self.cur_dictionary:
-						print "NO MATCH"
-						      
-						print "selected key", key 
+				for node_options in self.transition_options:
 						
-						self.node_num = key 
-
+					if all(self.nodes_dict[node_options][key] == environment_states[key] for key in environment):
+						self.node_num = node_options
+						# print "SELECTED OPTION", node_num
 						success = True 
 
-						match = True 
+				print "no match"
+				match = False  
+				if success == False: 
+					for key, node in self.nodes_dict.items():
+						if self.nodes_dict[key] == self.cur_dictionary:
+							print "NO MATCH"
+							      
+							print "selected key", key 
+							
+							self.node_num = key 
 
-					if match == True:
-						break 
+							success = True 
+
+							match = True 
+
+						if match == True:
+							break 
+
+		else: 
+			self.first_move = False  
 
 		# where to go next
 		self.transition_options = [str(i) for i in self.transitions_dict[self.node_num]]
@@ -347,6 +353,8 @@ class Controller():
 		print "publish_slug_state"
 	  
 		self.states_pub.publish(self.SlugState)
+
+
 
 	def pose_callback(self,msg):
 		# rospy.loginfo('global_pose_callback')

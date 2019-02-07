@@ -156,7 +156,7 @@ def track_motion_during_duration(counter_in, cmd_state):
 	State_msg = Int8MultiArray()
 
 	cmd_idx=counter_in
-	original_cmd_idx=cmd_idx
+	# original_cmd_idx=cmd_idx
 	print "cmd_idx", cmd_idx
 
 	start_time = rospy.get_time()
@@ -189,7 +189,7 @@ def track_motion_during_duration(counter_in, cmd_state):
  	finished_time = rospy.get_time()
  	State_msg.data.append(finished_time)
 	State_msg.data.append(battery_msg.power)
-	State_msg.data.append(int(desired_states[original_cmd_idx]))
+	State_msg.data.append(cmd_state)
 	State_pub.publish(State_msg)
 
 
