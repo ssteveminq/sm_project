@@ -13,6 +13,7 @@ from std_msgs.msg import Int32MultiArray
 from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import PoseStamped
+from hsrb_interface import Robot
 
 
 class Controller():
@@ -43,6 +44,7 @@ class Controller():
 		rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
 		task_sm_topic='SM/current_state'
 		#rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
+
 
 		# initial workload
 		self.previous_workload=17
@@ -98,8 +100,7 @@ class Controller():
 	def get_policy(self):
 		print "get_policy"
 		
-		# environment = ['wait', 'obstacle2', 'obstacle3', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant']
-		environment = ['wait', 'obstacle2', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant']
+		environment = ['wait', 'obstacle2', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant', 'workload_add', 'next_state_is_workstation', 'arriving_at_0']
 
 		self.Slug_state_to_Dictionary()
 
@@ -121,13 +122,12 @@ class Controller():
 					if all(self.nodes_dict[node_options][key] == environment_states[key] for key in environment):
 						self.node_num = node_options
 						success = True 
-	
-
+						print "this node_num ", self.node_num 
 
 				match = False  
 				if success == False: 
-					print "no match"
-					exit()
+					# print "no match"
+					# exit()
 					
 					for key, node in self.nodes_dict.items():
 						if self.nodes_dict[key] == self.cur_dictionary:
@@ -152,8 +152,9 @@ class Controller():
 		self.prev_node_num=self.node_num
 		# where to go next
 		self.transition_options = [str(i) for i in self.transitions_dict[self.node_num]]
+		print "next transition_options", self.transition_options
 		self.node_num=(random.choice(self.transition_options)) 
-		print "self.node_num ", self.node_num 
+		print "next node_num ", self.node_num 
 
 		# command robot state 
 		print "next state", self.nodes_dict[self.node_num]['r_state']
@@ -168,7 +169,11 @@ class Controller():
 
 		self.cur_dictionary = {}
 		self.cur_dictionary['wait'] = self.nodes_dict[self.node_num]['wait']
-		self.cur_dictionary['obstacle2'] = self.nodes_dict[self.node_num]['obstacle2']
+		
+		self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2 #self.nodes_dict[self.node_num]['obstacle2']
+		if self.SlugState.obstacle2 == 1:
+			tts.say("Could you please not block this work area?")
+
 		#self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
 		self.cur_dictionary['workload'] = self.SlugState.workload
 		self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
@@ -222,54 +227,6 @@ class Controller():
 		# rospy.loginfo('sm_states_updated')
 		self.SlugState=msg
 
-
-	# def simulate(self, node_init='0', num_steps=20):
-
-	# 	node_num = node_init
-
-	# 	var_list = []
-
-
-	# 	for i in range (0, num_steps):
-	# 		node = self.file_content['nodes'][node_num] 
-	# 		print( " ")
-	# 		# print(f"Node #{node_num}")
-	# 		print "Node #", node_num
-
-	# 		list_local, _, _ = variables_to_base10(node, self.name_and_bits)
-
-	# 		var_list.append(list_local) 
-	# 		transition_options =  node['trans']
-
-	# 		not_empty = 0
-			
-	# 		node_num = str(random.choice(transition_options))
-	# 		while not_empty == 0:
-	# 			next_node = self.file_content['nodes'][node_num] 
-	# 			if next_node['trans'] == []:
-	# 				node_num = str(random.choice(transition_options))
-	# 			else:
-	# 				not_empty = 1
-
-		
-	# 	# var_list is for simulation
-	# 	return var_list
-
-	# def json_to_dictionary(self):
-
-	# 	node_dictionary = {}
-	# 	transition_dictionary = {}
-
-	# 	for key, node in self.file_content['nodes'].items():
-	# 		_, dictionary_local, transition_local = variables_to_base10(node, self.name_and_bits)
-	# 		node_dictionary[str(key)] = dictionary_local
-	# 		transition_dictionary[str(key)] = transition_local
-
-	# 	return (node_dictionary, transition_dictionary)
-
-	# def save_dictionary_as_json(self, dictionary, filename):
-	# 	with open(filename, 'w') as f:
-	# 		json.dump(dictionary, f)
 
 	def loadjsonfiles(self):
 
@@ -375,7 +332,8 @@ class Controller():
 		# todo: sense the robot state
 		self.SlugState.r_state=self.policy_r_state
 
-		print "time_duration",int(time_duration)+self.remainder
+		print "time_duration",int(time_duration)
+		print "remainder", self.remainder
 		print "int(subtraction_amount)", int( (time_duration+self.remainder) / 10)
 
 
@@ -434,9 +392,26 @@ class Controller():
 		self.previous_workload=self.SlugState.workload
 
 
+
+
+tts=whole_body = None
+
+while not rospy.is_shutdown():
+	try:
+		robot = Robot()
+		tts = robot.try_get('default_tts')
+		whole_body = robot.try_get('whole_body')
+		tts.language = tts.ENGLISH
+		print "slug manager initialized"
+		break
+	except (exceptions.ResourceNotFoundError,
+		   exceptions.RobotConnectionError) as e:
+		rospy.logerr("Failed to obtain resource: {}\nRetrying...".format(e))
+
 if __name__ == '__main__':
 
-	rospy.init_node('slug_action')
+	# if I use robot, comment this out
+	# rospy.init_node('slug_action')
 
 	if len(sys.argv)>1:
 		node_init=sys.argv[1]
