@@ -171,8 +171,11 @@ class Controller():
 		self.cur_dictionary['wait'] = self.nodes_dict[self.node_num]['wait']
 		
 		self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2 #self.nodes_dict[self.node_num]['obstacle2']
-		if self.SlugState.obstacle2 == 1:
-			tts.say("Could you please not block this work area?")
+
+		
+		# if self.SlugState.obstacle2 == 1:
+		# 	tts.say("Could you please not block this work area?")
+		# 	rospy.sleep(0.1)
 
 		#self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
 		self.cur_dictionary['workload'] = self.SlugState.workload
@@ -394,24 +397,24 @@ class Controller():
 
 
 
-tts=whole_body = None
+# tts=whole_body = None
 
-while not rospy.is_shutdown():
-	try:
-		robot = Robot()
-		tts = robot.try_get('default_tts')
-		whole_body = robot.try_get('whole_body')
-		tts.language = tts.ENGLISH
-		print "slug manager initialized"
-		break
-	except (exceptions.ResourceNotFoundError,
-		   exceptions.RobotConnectionError) as e:
-		rospy.logerr("Failed to obtain resource: {}\nRetrying...".format(e))
+# while not rospy.is_shutdown():
+# 	try:
+# 		robot = Robot()
+# 		tts = robot.try_get('default_tts')
+# 		whole_body = robot.try_get('whole_body')
+# 		tts.language = tts.ENGLISH
+# 		print "slug manager initialized"
+# 		break
+# 	except (exceptions.ResourceNotFoundError,
+# 		   exceptions.RobotConnectionError) as e:
+# 		rospy.logerr("Failed to obtain resource: {}\nRetrying...".format(e))
 
 if __name__ == '__main__':
 
 	# if I use robot, comment this out
-	# rospy.init_node('slug_action')
+	rospy.init_node('slug_action')
 
 	if len(sys.argv)>1:
 		node_init=sys.argv[1]

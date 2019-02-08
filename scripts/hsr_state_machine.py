@@ -101,7 +101,7 @@ def generate_send_goal(cmd_idx, cmd_state):
 	if cmd_idx ==-1:
 		return GoalStatus.SUCCEEDED
 
-	goal_x = -.5
+	goal_x = -0.0
 	goal_y = -0.0
 	goal_yaw = 0.0  
 
@@ -154,7 +154,7 @@ def generate_send_goal(cmd_idx, cmd_state):
 	return action_state
 
 
-def track_motion_during_duration(counter_in, cmd_state):
+def track_motion_during_duration(counter_in, cmd_state, prev_state):
 	
 	State_pub=rospy.Publisher('SM/current_state', Int8MultiArray, queue_size=10)
 	State_msg = Int8MultiArray()
@@ -169,8 +169,20 @@ def track_motion_during_duration(counter_in, cmd_state):
 	duration=0
 	iterator=0
 
+	print "cmd_state", cmd_state
+	print "prev_state", prev_state
 
-	while duration<10.0:
+
+	if cmd_state == prev_state:
+		max_dur = 10.0
+
+	else:
+		max_dur = 5.0
+
+	print "max_dur", max_dur
+
+
+	while (duration<max_dur or cmd_idx != -1):
 
 		iterator=iterator+1
 		action_state = generate_send_goal(cmd_idx, cmd_state)
@@ -180,10 +192,11 @@ def track_motion_during_duration(counter_in, cmd_state):
 		duration = curr_time - start_time
 		# print duration
 		
-		if iterator%100000==1:
-			print "duration time: %s, action_state %s," % (duration, action_state)
+		# if iterator%10000000==1:
+			# print "duration time: %s, action_state %s," % (duration, action_state)
 
 		if action_state == GoalStatus.SUCCEEDED:
+			"duration time: %s, action_state %s," % (duration, action_state)
 			cmd_idx= -1
 
 
@@ -202,18 +215,20 @@ def track_motion_during_duration(counter_in, cmd_state):
 class S_0(smach.State):
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1','end_demo'],
-							input_keys=['S0_counter_in','S0_counter_out','S0_desired_state_in','S0_desired_state_out'],
-							output_keys=['S0_counter_out','S0_desired_state_out'])
+							input_keys=['S0_counter_in','S0_counter_out','S0_desired_state_in','S0_desired_state_out','S0_previous_state_in','S0_previous_state_out'],
+							output_keys=['S0_counter_out','S0_desired_state_out','S0_previous_state_out'])
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing S_0')
 
-		action_state = track_motion_during_duration(userdata.S0_counter_in, userdata.S0_desired_state_in)
+		action_state = track_motion_during_duration(userdata.S0_counter_in, userdata.S0_desired_state_in, userdata.S0_previous_state_in)
 
 		if action_state == GoalStatus.SUCCEEDED:
 			userdata.S0_counter_out=userdata.S0_counter_in+1
 			
 			print "userdata.S0_counter out", userdata.S0_counter_out
+
+			userdata.S0_previous_state_out = userdata.S0_desired_state_in
 
 			userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
 
@@ -231,19 +246,21 @@ class S_0(smach.State):
 class S_1(smach.State):
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['Go_S1', 'Go_S2', 'end_demo'],
-							input_keys=['S1_counter_in','S1_counter_out','S1_desired_state_in','S1_desired_state_out'],
-							output_keys=['S1_counter_out','S1_desired_state_out' ])
+							input_keys=['S1_counter_in','S1_counter_out','S1_desired_state_in','S1_desired_state_out','S1_previous_state_in','S1_previous_state_out'],
+							output_keys=['S1_counter_out','S1_desired_state_out','S1_previous_state_out' ])
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_1')
 		#tts.say("Executing State 1")
 		rospy.sleep(0.5)
 
-		action_state = track_motion_during_duration(userdata.S1_counter_in, userdata.S1_desired_state_in)
+		action_state = track_motion_during_duration(userdata.S1_counter_in, userdata.S1_desired_state_in, userdata.S1_previous_state_in)
 
 		if action_state == GoalStatus.SUCCEEDED:
 			userdata.S1_counter_out=userdata.S1_counter_in+1
 			print "userdata.S1_counter out", userdata.S1_counter_out
+
+			userdata.S1_previous_state_out = userdata.S1_desired_state_in
 
 			userdata.S1_desired_state_out, output_state = get_action(userdata.S1_counter_out)
 
@@ -257,8 +274,8 @@ class S_1(smach.State):
 class S_2(smach.State):
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['Go_S0', 'Go_S1', 'Go_S2', 'Go_S3', 'end_demo'],
-							input_keys=['S2_counter_in','S2_counter_out','S2_desired_state_in','S2_desired_state_out'],
-							output_keys=['S2_counter_out','S2_desired_state_out'])
+							input_keys=['S2_counter_in','S2_counter_out','S2_desired_state_in','S2_desired_state_out','S2_previous_state_in','S2_previous_state_out'],
+							output_keys=['S2_counter_out','S2_desired_state_out','S2_previous_state_out' ])
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_2')
@@ -267,11 +284,13 @@ class S_2(smach.State):
 		rospy.sleep(0.5)
 
 
-		action_state = track_motion_during_duration(userdata.S2_counter_in, userdata.S2_desired_state_in)
+		action_state = track_motion_during_duration(userdata.S2_counter_in, userdata.S2_desired_state_in, userdata.S2_previous_state_in)
 
 		if action_state == GoalStatus.SUCCEEDED:
 			userdata.S2_counter_out=userdata.S2_counter_in+1
 			print "userdata.S2_counter out", userdata.S2_counter_out
+
+			userdata.S2_previous_state_out = userdata.S2_desired_state_in
 
 			userdata.S2_desired_state_out, output_state = get_action(userdata.S2_counter_out)
 
@@ -285,19 +304,21 @@ class S_2(smach.State):
 class S_3(smach.State):
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['Go_S2', 'Go_S3', 'Go_S4', 'end_demo'],
-							input_keys=['S3_counter_in','S3_counter_out','S3_desired_state_in','S3_desired_state_out'],
-							output_keys=['S3_counter_out','S3_desired_state_out'])
+							input_keys=['S3_counter_in','S3_counter_out','S3_desired_state_in','S3_desired_state_out','S3_previous_state_in','S3_previous_state_out'],
+							output_keys=['S3_counter_out','S3_desired_state_out','S3_previous_state_out' ])
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_3')
 		#tts.say("Executing State 3")
 		rospy.sleep(0.5)
 
-		action_state = track_motion_during_duration(userdata.S3_counter_in, userdata.S3_desired_state_in)
+		action_state = track_motion_during_duration(userdata.S3_counter_in, userdata.S3_desired_state_in, userdata.S3_previous_state_in)
 
 		if action_state == GoalStatus.SUCCEEDED:
 			userdata.S3_counter_out=userdata.S3_counter_in+1
 			print "userdata.S3_counter out", userdata.S3_counter_out
+
+			userdata.S3_previous_state_out = userdata.S3_desired_state_in
 
 			userdata.S3_desired_state_out, output_state = get_action(userdata.S3_counter_out)
 
@@ -311,19 +332,21 @@ class S_3(smach.State):
 class S_4(smach.State):
 	def __init__(self):
 		smach.State.__init__(self, outcomes=['Go_S3', 'Go_S4', 'end_demo'],
-							input_keys=['S4_counter_in','S4_counter_out','S4_desired_state_in','S4_desired_state_out'],
-							output_keys=['S4_counter_out','S4_desired_state_out'])
+							input_keys=['S4_counter_in','S4_counter_out','S4_desired_state_in','S4_desired_state_out','S4_previous_state_in','S4_previous_state_out'],
+							output_keys=['S4_counter_out','S4_desired_state_out','S4_previous_state_out'])
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_4')
 		#tts.say("Executing State 4")
 		rospy.sleep(0.5)
 
-		action_state = track_motion_during_duration(userdata.S4_counter_in, userdata.S4_desired_state_in)
+		action_state = track_motion_during_duration(userdata.S4_counter_in, userdata.S4_desired_state_in, userdata.S4_previous_state_in)
 
 		if action_state == GoalStatus.SUCCEEDED:
 			userdata.S4_counter_out=userdata.S4_counter_in+1
 			print "userdata.S4_counter out", userdata.S4_counter_out
+
+			userdata.S4_previous_state_out = userdata.S4_desired_state_in
 
 			userdata.S4_desired_state_out, output_state = get_action(userdata.S4_counter_out)
 
@@ -348,43 +371,6 @@ while not rospy.is_shutdown():
 		   exceptions.RobotConnectionError) as e:
 		rospy.logerr("Failed to obtain resource: {}\nRetrying...".format(e))
 
-
-
-# rospy.init_node('test_move')
-
-#===========Read csv==============
-# f = open('../csv_parser/states_and_vals.csv', 'rt')
-# reader = csv.reader(f)
-# row_count = sum(1 for row in reader)
-# f.seek(0)
-
-# col_count = len(next(reader))
-# # print "columns"
-# # print col_count
-
-# f.seek(0)
-# data = [row for row in reader] # list comprehension 
-# f.close()
-# string_col = data[0]
-# desired_states = []
-
-# for col in range(0, col_count):
-# 	if (string_col[col] == 'robot_state'):
-# 		robot_state_col = col 
-
-# for row1 in range(1,row_count):
-# 	this_row = data[row1]
-# 	desired_states.extend([this_row[robot_state_col]])
-
-# desired_states = np.array(desired_states)
-# desired_states.resize(desired_states.shape[0])
-
-# print desired_states
-
-# exit()
-
-#==================================
-
 limit_moves = 50
 
 tts.say("Hello operator! I'm ready'")
@@ -406,6 +392,7 @@ if __name__=='__main__':
 	# sm.userdata.desired_states =desired_states
 	sm.userdata.state_index=0
 	sm.userdata.current_desired_state=get_policy()
+	sm.userdata.previous_desired_state=0
 
 	with sm:
 		smach.StateMachine.add('S_0', S_0(),
@@ -413,33 +400,54 @@ if __name__=='__main__':
 					remapping = {'S0_counter_in':'state_index',
 								 'S0_counter_out':'state_index',
 								 'S0_desired_state_in' : 'current_desired_state',
-								 'S0_desired_state_out' : 'current_desired_state'})
+								 'S0_desired_state_out' : 'current_desired_state',
+								 'S0_previous_state_in' : 'previous_desired_state',
+								 'S0_previous_state_out' : 'previous_desired_state'})
 		smach.StateMachine.add('S_1', S_1(),
 			transitions = {'Go_S1':'S_1', 'Go_S2':'S_2', 'end_demo':'stop'},
 					remapping = {'S1_counter_in':'state_index',
 								 'S1_counter_out':'state_index',
 								 'S1_desired_state_in' : 'current_desired_state',
-								 'S1_desired_state_out' : 'current_desired_state'})
+								 'S1_desired_state_out' : 'current_desired_state',
+								 'S1_previous_state_in' : 'previous_desired_state',
+								 'S1_previous_state_out' : 'previous_desired_state'})
 		smach.StateMachine.add('S_2', S_2(),
 			transitions = {'Go_S0': 'S_0', 'Go_S1': 'S_1', 'Go_S2':'S_2', 'Go_S3':'S_3', 'end_demo':'stop'},
 					remapping = {'S2_counter_in':'state_index',
 								 'S2_counter_out':'state_index',
 								 'S2_desired_state_in' : 'current_desired_state',
-								 'S2_desired_state_out' : 'current_desired_state'})
+								 'S2_desired_state_out' : 'current_desired_state',
+								 'S2_previous_state_in' : 'previous_desired_state',
+								 'S2_previous_state_out' : 'previous_desired_state'})
 		smach.StateMachine.add('S_3', S_3(),
 			transitions = {'Go_S2': 'S_2', 'Go_S3':'S_3', 'Go_S4':'S_4', 'end_demo':'stop'},
 					remapping = {'S3_counter_in':'state_index',
 								 'S3_counter_out':'state_index',
 								 'S3_desired_state_in' : 'current_desired_state',
-								 'S3_desired_state_out' : 'current_desired_state'})	
+								 'S3_desired_state_out' : 'current_desired_state',
+								 'S3_previous_state_in' : 'previous_desired_state',
+								 'S3_previous_state_out' : 'previous_desired_state'})	
 		smach.StateMachine.add('S_4', S_4(),
 			transitions = {'Go_S3':'S_3', 'Go_S4':'S_4', 'end_demo':'stop'},
 					remapping = {'S4_counter_in':'state_index',
 								 'S4_counter_out':'state_index',
 								 'S4_desired_state_in' : 'current_desired_state',
-								 'S4_desired_state_out' : 'current_desired_state'})	
+								 'S4_desired_state_out' : 'current_desired_state',
+								 'S4_previous_state_in' : 'previous_desired_state',
+								 'S4_previous_state_out' : 'previous_desired_state'})	
 
-	sm.set_initial_state(['S_2'])
+	if sm.userdata.current_desired_state == 0:
+		sm.set_initial_state(['S_0'])
+	elif sm.userdata.current_desired_state == 1:
+		sm.set_initial_state(['S_1'])
+	elif sm.userdata.current_desired_state == 2:
+		sm.set_initial_state(['S_2'])
+	elif sm.userdata.current_desired_state == 3:
+		sm.set_initial_state(['S_3'])
+	else: 
+		sm.set_initial_state(['S_4'])
+
+	
 	outcome = sm.execute()
 
 
