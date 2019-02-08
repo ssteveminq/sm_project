@@ -141,24 +141,25 @@ class Controller():
 		
 					for key, node in self.nodes_dict.items():
 						# there is a bug here ?? need to index properly
-						if all(self.nodes_dict[key][node] == environment_states[key]):
+						for key1, node1 in node.items():
+							if all(self.nodes_dict[key][key3] == environment_states[key3] for key3 in environment):
 
-							if all(self.nodes_dict[key][node] == controllable_states[key]):
-							
-							# if self.nodes_dict[key] == self.cur_dictionary:
-								print "NO MATCH"
-								      
-								print "selected key", key 
-
+								if all(self.nodes_dict[key][key3] == controllable_states[key3] for key3 in controllable):
 								
-								self.node_num = key 
+								# if self.nodes_dict[key] == self.cur_dictionary:
+									print "NO MATCH"
+									      
+									print "selected key", key 
 
-								success = True 
+									
+									self.node_num = key 
 
-								match = True 
+									success = True 
 
-							if match == True:
-								break 
+									match = True 
+
+								if match == True:
+									break 
 
 
 		else: 
