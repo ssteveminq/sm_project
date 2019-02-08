@@ -100,8 +100,8 @@ class Controller():
 	def get_policy(self):
 		print "get_policy"
 		
-		environment = ['wait', 'obstacle2', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant', 'workload_add', 'next_state_is_workstation', 'arriving_at_0']
-
+		environment = ['wait', 'obstacle2', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant']
+		# , 'workload_add', 'next_state_is_workstation', 'arriving_at_0'
 		self.Slug_state_to_Dictionary()
 
 		environment_states = {}
@@ -126,10 +126,9 @@ class Controller():
 
 				match = False  
 				if success == False: 
-					# print "no match"
-					# exit()
-					
+		
 					for key, node in self.nodes_dict.items():
+
 						if self.nodes_dict[key] == self.cur_dictionary:
 							print "NO MATCH"
 							      
@@ -186,8 +185,14 @@ class Controller():
 		# todo: check r_state properly
 		self.cur_dictionary['r_state'] = self.nodes_dict[self.node_num]['r_state']
 
-		self.cur_dictionary['workload_add'] = self.nodes_dict[self.node_num]['workload_add']
-		self.cur_dictionary['next_state_is_workstation'] = self.nodes_dict[self.node_num]['next_state_is_workstation']
+		
+
+		if self.nodes_dict[self.node_num]['next_state_is_workstation'] >= 12:
+			self.cur_dictionary['next_state_is_workstation'] = 0
+			self.cur_dictionary['workload_add'] = 0
+		else: 
+			self.cur_dictionary['next_state_is_workstation'] = self.nodes_dict[self.node_num]['next_state_is_workstation']
+			self.cur_dictionary['workload_add'] = self.nodes_dict[self.node_num]['workload_add']	
 		self.cur_dictionary['complete_work_with_robot'] = self.nodes_dict[self.node_num]['complete_work_with_robot']
 
 		if self.policy_complete_work_with_robot != self.SlugState.complete_work_with_robot:

@@ -172,10 +172,10 @@ def track_motion_during_duration(counter_in, cmd_state, prev_state):
 	print "cmd_state", cmd_state
 	print "prev_state", prev_state
 
-
-	if cmd_state == prev_state:
+	if cmd_state == 3:
 		max_dur = 10.0
-
+	elif cmd_state == prev_state:
+		max_dur = 10.0
 	else:
 		max_dur = 5.0
 
@@ -309,7 +309,7 @@ class S_3(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_3')
-		#tts.say("Executing State 3")
+		tts.say("Executing State 3")
 		rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S3_counter_in, userdata.S3_desired_state_in, userdata.S3_previous_state_in)
@@ -337,7 +337,7 @@ class S_4(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_4')
-		#tts.say("Executing State 4")
+		tts.say("Executing State 4")
 		rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S4_counter_in, userdata.S4_desired_state_in, userdata.S4_previous_state_in)
