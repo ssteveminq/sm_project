@@ -101,12 +101,24 @@ class Controller():
 		print "get_policy"
 		
 		environment = ['wait', 'obstacle2', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant']
-		# , 'workload_add', 'next_state_is_workstation', 'arriving_at_0'
+
+		controllable = ['r_state', 'complete_work_with_robot']
+
+		#, 'workload_add', 'next_state_is_workstation', 'arriving_at_0'
+
 		self.Slug_state_to_Dictionary()
 
 		environment_states = {}
 		for states in environment:
 			environment_states[states] = self.cur_dictionary[states]
+
+		print "environment", environment_states
+
+		controllable_states = {}
+		for states in controllable:
+			controllable_states[states] = self.cur_dictionary[states]
+
+		print "controllable", controllable_states
 
 		self.transition_options = [str(i) for i in self.transitions_dict[self.prev_node_num]]
 
@@ -128,24 +140,31 @@ class Controller():
 				if success == False: 
 		
 					for key, node in self.nodes_dict.items():
+						# there is a bug here ?? need to index properly
+						if all(self.nodes_dict[key][node] == environment_states[key]):
 
-						if self.nodes_dict[key] == self.cur_dictionary:
-							print "NO MATCH"
-							      
-							print "selected key", key 
-
+							if all(self.nodes_dict[key][node] == controllable_states[key]):
 							
-							self.node_num = key 
+							# if self.nodes_dict[key] == self.cur_dictionary:
+								print "NO MATCH"
+								      
+								print "selected key", key 
 
-							success = True 
+								
+								self.node_num = key 
 
-							match = True 
+								success = True 
 
-						if match == True:
-							break 
+								match = True 
+
+							if match == True:
+								break 
+
 
 		else: 
 			self.first_move = False  
+
+		self.policy_workload_add_previous=self.nodes_dict[self.node_num]['workload_add']
 
 		# keep track of where robot was
 		self.prev_node_num=self.node_num
@@ -228,7 +247,7 @@ class Controller():
 		# self.cur_dictionary['arriving_at_0'] = self.policy_arriving_at_0
 		# self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
 
-		print self.cur_dictionary
+		# print self.cur_dictionary
 
 
 	def sm_state_callback(self, msg):
@@ -396,7 +415,6 @@ class Controller():
 		if self.SlugState.complete_work_with_robot==1 and self.SlugState.r_state == 1:
 			self.SlugState.r_state=0
 
-		self.policy_workload_add_previous=self.policy_workload_add
 		self.previous_workload=self.SlugState.workload
 
 

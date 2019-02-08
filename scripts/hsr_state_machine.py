@@ -28,6 +28,7 @@ def get_action(cmd_idx):
 	# if cmd_idx==len(desired_states):
 	if cmd_idx==limit_moves: 
 		print "end of demo"
+		desired_state = 0 
 		output_state = 'end_demo'
 		return desired_state, output_state
 
