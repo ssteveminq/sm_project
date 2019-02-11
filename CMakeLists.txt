@@ -69,6 +69,7 @@ catkin_package(
   tf
   actionlib
   actionlib_msgs
+  villa_manipulation
  )
 
 include_directories(

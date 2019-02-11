@@ -10,6 +10,7 @@ from std_msgs.msg import Int8MultiArray
 from tmc_msgs.msg import BatteryState
 from hsrb_interface import Robot
 from hsrb_interface import exceptions
+from villa_manipulation.msg import *
 # import roslib
 import rospy
 import smach
@@ -48,6 +49,7 @@ def get_action(cmd_idx):
 		print "desired state out of bounds"
 		output_state = 'end_demo'
 
+
 	return desired_state, output_state
 
 
@@ -67,6 +69,43 @@ def get_policy():
 
 
 	return cmd_state
+def navigation_action(goal_x,goal_y,goal_yaw):
+    pose = PoseStamped()
+    pose.header.stamp = rospy.Time.now()
+    pose.header.frame_id = "map"
+    pose.pose.position = Point(goal_x, goal_y, 0)
+    quat = tf.transformations.quaternion_from_euler(0, 0, goal_yaw)
+    pose.pose.orientation = Quaternion(*quat)
+
+    goal = MoveBaseGoal()
+    goal.target_pose = pose
+
+    # send message to the action server
+    cli.send_goal(goal)
+
+    # wait for the action server to complete the order
+    cli.wait_for_result()
+
+    # print result of navigation
+    result_action_state = cli.get_state()
+
+    return result_action_state 
+
+def givepose_action():
+    goal = villa_manipulation.msg.HandoverGoal()
+    givepose_client.send_goal(goal)
+    givepose_client.wait_for_result()
+    result_action_state = givepose_client.get_state()
+    return result_action_state 
+
+
+def receivepose_action():
+    goal = villa_manipulation.msg.HandoverGoal()
+    receivepose_client.send_goal(goal)
+    receivepose_client.wait_for_result()
+    result_action_state = receivepose_client.get_state()
+    return result_action_state 
+
 	
 def generate_send_goal(cmd_idx, cmd_state):
 
@@ -76,54 +115,67 @@ def generate_send_goal(cmd_idx, cmd_state):
 	goal_x = -0.0
 	goal_y = -0.0
 	goal_yaw = 0.0  
-
-	# #call slug action server to get policy
-	# slug_goal = Sm_StateGoal(start=True)
-	# # Sends the goal to the action server.
-	# slug_cli.send_goal(slug_goal)
-	# # Waits for the server to finish performing the action.
-	# slug_cli.wait_for_result()
- #    slug_result = slug_cli.get_result()    
- #    cmd_state = slug_result.policy
-
+        
+        Move_Base = True
 
 	# cmd_state = desired_states[cmd_idx]
 
 	if cmd_state == 0:
-		goal_y = -0.0
+            goal_y = -0.0
+            move_atction_state=navigation_action(goal_x,goal_y,goal_yaw)
+            if move_atction_state==GoalStatus.SUCCEEDED:
+               g_action_state=givepose_action()
+               r_action_state=g_action_state
+            if previous_action==0:
+               Move_Base = False
 	elif cmd_state == 1:
-		goal_y = -0.0
+            goal_y = -0.0
 	elif cmd_state == 2:
-		goal_y = -0.5
+            goal_y = -0.5
 	elif cmd_state == 3:
-		goal_y = -1.0
+            goal_y = -1.0
 	elif cmd_state == 4:
-		goal_y = -2.0
+            #TODo: move to the state4 and call handover client 
+            goal_y = -2.0
+
+            #move base + receiveepose
+            move_atction_state=navigation_action(goal_x,goal_y,goal_yaw)
+            if move_atction_state==GoalStatus.SUCCEEDED:
+                receive_action_state=receivepose_action()
+            #the case should wait? 
+            if previous_action==4:
+                receive_action_state=GoalStatus.SUCCEEDED
 	else:  
-		goal_y = -2.0
+            goal_y = -2.0
 
-	# fill ROS message
-	pose = PoseStamped()
-	pose.header.stamp = rospy.Time.now()
-	pose.header.frame_id = "map"
-	pose.pose.position = Point(goal_x, goal_y, 0)
-	quat = tf.transformations.quaternion_from_euler(0, 0, goal_yaw)
-	pose.pose.orientation = Quaternion(*quat)
+        if Move_Base:
+            r_action_state=navigation_action(goal_x,goal_y,goal_yaw)
+            # print 'action_state',action_state
+        
+            # fill ROS message
+            # pose = PoseStamped()
+            # pose.header.stamp = rospy.Time.now()
+            # pose.header.frame_id = "map"
+            # pose.pose.position = Point(goal_x, goal_y, 0)
+            # quat = tf.transformations.quaternion_from_euler(0, 0, goal_yaw)
+            # pose.pose.orientation = Quaternion(*quat)
 
-	goal = MoveBaseGoal()
-	goal.target_pose = pose
+            # goal = MoveBaseGoal()
+            # goal.target_pose = pose
 
-	# send message to the action server
-	cli.send_goal(goal)
+        # send message to the action server
+            # cli.send_goal(goal)
 
-	# wait for the action server to complete the order
-	cli.wait_for_result()
+        # wait for the action server to complete the order
+            # cli.wait_for_result()
 
-	# print result of navigation
-	action_state = cli.get_state()
-	print 'action_state',action_state
+        # print result of navigation
+            # action_state = cli.get_state()
+        # else:
+            #handover or putdown
 
-	return action_state
+	# print 'action_state',action_state
+	return r_action_state
 
 
 def track_motion_during_duration(counter_in, cmd_state, prev_state):
@@ -193,6 +245,7 @@ class S_0(smach.State):
 	def execute(self, userdata):
 		rospy.loginfo('Executing S_0')
 
+                tts.say("Executing State 0")
 		action_state = track_motion_during_duration(userdata.S0_counter_in, userdata.S0_desired_state_in, userdata.S0_previous_state_in)
 
 		if action_state == GoalStatus.SUCCEEDED:
@@ -203,6 +256,7 @@ class S_0(smach.State):
 			userdata.S0_previous_state_out = userdata.S0_desired_state_in
 
 			userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
+                        previous_action=0
 
 			return output_state
 
@@ -223,7 +277,7 @@ class S_1(smach.State):
 
 	def execute(self, userdata):
 		rospy.loginfo('Executing state S_1')
-		#tts.say("Executing State 1")
+                tts.say("Executing State 1")
 		rospy.sleep(0.5)
 
 		action_state = track_motion_during_duration(userdata.S1_counter_in, userdata.S1_desired_state_in, userdata.S1_previous_state_in)
@@ -235,6 +289,7 @@ class S_1(smach.State):
 			userdata.S1_previous_state_out = userdata.S1_desired_state_in
 
 			userdata.S1_desired_state_out, output_state = get_action(userdata.S1_counter_out)
+                        previous_action=1
 
 			return output_state
 
@@ -266,6 +321,7 @@ class S_2(smach.State):
 
 			userdata.S2_desired_state_out, output_state = get_action(userdata.S2_counter_out)
 
+                        previous_action=2
 			return output_state
 
 		else:
@@ -292,6 +348,7 @@ class S_3(smach.State):
 
 			userdata.S3_previous_state_out = userdata.S3_desired_state_in
 
+                        previous_action=3
 			userdata.S3_desired_state_out, output_state = get_action(userdata.S3_counter_out)
 
 			return output_state
@@ -319,9 +376,9 @@ class S_4(smach.State):
 			print "userdata.S4_counter out", userdata.S4_counter_out
 
 			userdata.S4_previous_state_out = userdata.S4_desired_state_in
-
 			userdata.S4_desired_state_out, output_state = get_action(userdata.S4_counter_out)
 
+                        previous_action=4
 			return output_state
 		else:
 			"goal was not achieved"
@@ -345,17 +402,21 @@ while not rospy.is_shutdown():
 
 limit_moves = 100
 
-tts.say("Hello operator! I'm ready'")
+# tts.say("Hello! I'm ready'")
 rospy.sleep(1)
 
 # initialize action client
 
 cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
 slug_cli = actionlib.SimpleActionClient('slug_controller', Sm_StateAction)
+givepose_client = actionlib.SimpleActionClient('givepose_action',villa_manipulation.msg.HandoverAction)
+receivepose_client= actionlib.SimpleActionClient('receivepose_action',villa_manipulation.msg.HandoverAction)
 
 # wait for the action server to establish connection
 cli.wait_for_server()
 slug_cli.wait_for_server()
+givepose_client.wait_for_server()
+receivepose_client.wait_for_server()
 
 
 if __name__=='__main__':
@@ -365,6 +426,7 @@ if __name__=='__main__':
 	sm.userdata.state_index=0
 	sm.userdata.current_desired_state=get_policy()
 	sm.userdata.previous_desired_state=sm.userdata.current_desired_state
+        previous_action=sm.userdata.current_desired_state
 
 	with sm:
 		smach.StateMachine.add('S_0', S_0(),

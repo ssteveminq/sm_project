@@ -47,8 +47,10 @@ class Controller():
 
 
 		# initial workload
-		self.previous_workload=16
-		self.SlugState.workload=15
+		self.previous_workload=12
+		self.SlugState.workload=11
+		# self.previous_workload=16
+		# self.SlugState.workload=15
 		self.policy_workload_add_previous=0
 		self.first_move=True  
 		self.remainder=0
@@ -62,7 +64,8 @@ class Controller():
 		self._as.start()
 		rospy.loginfo('action_server_started:%s', self._action_name)
 
-		self.node_num='1132'
+                self.node_num='1132'
+		# self.node_num='1738'
 		self.prev_node_num=self.node_num
 
 	def execute_cb(self, goal):
