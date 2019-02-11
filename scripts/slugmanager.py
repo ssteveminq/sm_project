@@ -47,8 +47,8 @@ class Controller():
 
 
 		# initial workload
-		self.previous_workload=17
-		self.SlugState.workload=16
+		self.previous_workload=16
+		self.SlugState.workload=15
 		self.policy_workload_add_previous=0
 		self.first_move=True  
 		self.remainder=0
@@ -62,7 +62,7 @@ class Controller():
 		self._as.start()
 		rospy.loginfo('action_server_started:%s', self._action_name)
 
-		self.node_num='0'
+		self.node_num='1132'
 		self.prev_node_num=self.node_num
 
 	def execute_cb(self, goal):
@@ -100,7 +100,7 @@ class Controller():
 	def get_policy(self):
 		print "get_policy"
 		
-		environment = ['wait', 'obstacle2', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant']
+		environment = ['wait', 'obstacle2', 'obstacle3', 'workload', 'complete_work_at_workstation', 'complete_dropoff_success', 'complete_dropoff_tries', 'workload_stays_constant']
 
 		controllable = ['r_state', 'complete_work_with_robot']
 
@@ -196,7 +196,7 @@ class Controller():
 		# 	tts.say("Could you please not block this work area?")
 		# 	rospy.sleep(0.1)
 
-		#self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
+		self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
 		self.cur_dictionary['workload'] = self.SlugState.workload
 		self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
 		self.cur_dictionary['complete_dropoff_success'] = self.nodes_dict[self.node_num]['complete_dropoff_success']
@@ -219,7 +219,7 @@ class Controller():
 			print "work with robot tracking error"
 			exit()
 
-		self.cur_dictionary['arriving_at_0'] = self.nodes_dict[self.node_num]['arriving_at_0']
+		self.cur_dictionary['next_arriving_at_0'] = self.nodes_dict[self.node_num]['next_arriving_at_0']
 		self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
 
 
@@ -287,7 +287,7 @@ class Controller():
 		lookup = [
 			{'name': 'wait', 'bits': 1},
 			{'name': 'obstacle2', 'bits': 1},
-			#{'name': 'obstacle3', 'bits': 1},
+			{'name': 'obstacle3', 'bits': 1},
 			{'name': 'workload', 'bits': 5},
 			{'name': 'complete_work_at_workstation', 'bits': 1},
 			{'name': 'complete_dropoff_success', 'bits': 1},
@@ -297,7 +297,7 @@ class Controller():
 			{'name': 'next_state_is_workstation', 'bits': 1},
 			{'name': 'complete_work_with_robot', 'bits': 1},
 			{'name': 'workload_stays_constant','bits': 1},
-			{'name': 'arriving_at_0', 'bits': 1},
+			{'name': 'next_arriving_at_0', 'bits': 1},
 			]
 
 		return lookup
@@ -355,7 +355,7 @@ class Controller():
 		self.policy_workload_add= self.nodes_dict[self.node_num]['workload_add']
 		self.policy_next_state_is_workstation= self.nodes_dict[self.node_num]['next_state_is_workstation']
 		self.policy_complete_work_with_robot=self.nodes_dict[self.node_num]['complete_work_with_robot']
-		self.policy_arriving_at_0= self.nodes_dict[self.node_num]['arriving_at_0']
+		self.policy_arriving_at_0= self.nodes_dict[self.node_num]['next_arriving_at_0']
 
 		# todo: sense the robot state
 		self.SlugState.r_state=self.policy_r_state
