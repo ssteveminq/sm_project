@@ -50,10 +50,15 @@ class Talk_to_Obstacle():
 			pass 
 
 	def obstacle3_Callback(self,msg):
-		if msg.data==True:
-			pass  
+		self.curr_time = rospy.get_time()
+		self.dur = int(self.curr_time-self.Initial_time)
+		print "self.dur", self.dur
+		if msg.data==True and self.dur > 10.0:
+			self.Initial_time = self.curr_time
+			tts.say("Could you please not block this work area?")
+			rospy.sleep(0.1)			
 		else:
-			pass  
+			pass 
 
 
 tts=whole_body = None

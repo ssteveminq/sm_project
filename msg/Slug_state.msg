@@ -1,7 +1,7 @@
 Header header
 int8 wait
-int8 obstacle2
-int8 obstacle3
+int8 obstacle_left
+int8 obstacle_right
 int8 workload
 int8 complete_work_at_workstation
 int8 complete_dropoff_success

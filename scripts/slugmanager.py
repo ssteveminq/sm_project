@@ -47,10 +47,8 @@ class Controller():
 
 
 		# initial workload
-		self.previous_workload=12
-		self.SlugState.workload=11
-		# self.previous_workload=16
-		# self.SlugState.workload=15
+		self.previous_workload=13
+		self.SlugState.workload=12
 		self.policy_workload_add_previous=0
 		self.first_move=True  
 		self.remainder=0
@@ -64,9 +62,11 @@ class Controller():
 		self._as.start()
 		rospy.loginfo('action_server_started:%s', self._action_name)
 
-                self.node_num='1132'
-		# self.node_num='1738'
+
+		self.node_num='0'
 		self.prev_node_num=self.node_num
+
+		self.next_state=None
 
 	def execute_cb(self, goal):
 		print "execute_cb"
@@ -178,37 +178,49 @@ class Controller():
 		self.node_num=(random.choice(self.transition_options)) 
 		print "next node_num ", self.node_num 
 
+		self.next_state=self.nodes_dict[self.node_num]['r_state']
+
 		# command robot state 
-		print "next state", self.nodes_dict[self.node_num]['r_state']
+		print "next state", self.next_state
 		return self.nodes_dict[self.node_num]['r_state']
 
 
 	def Slug_state_to_Dictionary(self):
 
 		print "Slug_state_to_Dictionary"
-		#self.SlugState ==> dictionary check`
-
 
 		self.cur_dictionary = {}
-		self.cur_dictionary['wait'] = self.nodes_dict[self.node_num]['wait']
+		self.cur_dictionary['wait'] = self.SlugState.wait
 		
-		self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2 #self.nodes_dict[self.node_num]['obstacle2']
+		if self.first_move==True:
+			self.cur_dictionary['obstacle2'] = self.nodes_dict[self.node_num]['obstacle2']
+			self.cur_dictionary['obstacle3'] = self.nodes_dict[self.node_num]['obstacle3']
 
-		
-		# if self.SlugState.obstacle2 == 1:
-		# 	tts.say("Could you please not block this work area?")
-		# 	rospy.sleep(0.1)
+		else: 
+			if self.next_state == 0 or self.next_state == 1:
+				self.cur_dictionary['obstacle2'] = self.SlugState.obstacle_right 
+				self.cur_dictionary['obstacle3'] = 0
+			elif self.next_state == 2:
+				self.cur_dictionary['obstacle2'] = 0
+				self.cur_dictionary['obstacle3'] = self.SlugState.obstacle_right 				
+			elif self.next_state == 3:
+				self.cur_dictionary['obstacle2'] = self.SlugState.obstacle_left
+				self.cur_dictionary['obstacle3'] = 0
+			elif self.next_state == 4:
+				self.cur_dictionary['obstacle2'] = 0 
+				self.cur_dictionary['obstacle3'] = self.SlugState.obstacle_left
 
-		self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
 		self.cur_dictionary['workload'] = self.SlugState.workload
 		self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
+
+		# TODO: tries and success - sense
 		self.cur_dictionary['complete_dropoff_success'] = self.nodes_dict[self.node_num]['complete_dropoff_success']
 		self.cur_dictionary['complete_dropoff_tries'] = self.nodes_dict[self.node_num]['complete_dropoff_tries']
 
-		# todo: check r_state properly
+		# todo: check r_state properly DO WE NEED TO DO THIS?
+		# self.cur_dictionary['r_state'] = self.SlugState.r_state
 		self.cur_dictionary['r_state'] = self.nodes_dict[self.node_num]['r_state']
 
-		
 
 		if self.nodes_dict[self.node_num]['next_state_is_workstation'] >= 12:
 			self.cur_dictionary['next_state_is_workstation'] = 0
@@ -224,34 +236,6 @@ class Controller():
 
 		self.cur_dictionary['next_arriving_at_0'] = self.nodes_dict[self.node_num]['next_arriving_at_0']
 		self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
-
-
-		# Uncomment below for real implementation
-
-		# self.cur_dictionary = {}
-		# self.cur_dictionary['wait'] = self.SlugState.wait
-		# self.cur_dictionary['obstacle2'] = self.SlugState.obstacle2
-		# #self.cur_dictionary['obstacle3'] = self.SlugState.obstacle3
-		# self.cur_dictionary['workload'] = self.SlugState.workload
-		# self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
-		# self.cur_dictionary['complete_dropoff_success'] = self.SlugState.complete_dropoff_success
-		# self.cur_dictionary['complete_dropoff_tries'] = self.SlugState.complete_dropoff_tries
-
-		# # todo: check r_state properly
-		# self.cur_dictionary['r_state'] = self.SlugState.r_state
-
-		# self.cur_dictionary['workload_add'] = self.policy_workload_add
-		# self.cur_dictionary['next_state_is_workstation'] = self.policy_next_state_is_workstation
-		# self.cur_dictionary['complete_work_with_robot'] = self.policy_complete_work_with_robot
-
-		# if self.policy_complete_work_with_robot != self.SlugState.complete_work_with_robot:
-		# 	print "work with robot tracking error"
-		# 	exit()
-
-		# self.cur_dictionary['arriving_at_0'] = self.policy_arriving_at_0
-		# self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
-
-		# print self.cur_dictionary
 
 
 	def sm_state_callback(self, msg):
@@ -332,18 +316,18 @@ class Controller():
 		# rospy.loginfo('obstacle2_callback')
 		# self.SlugState.obstacle2=int(msg.data)
 		if msg.data==True:
-			self.SlugState.obstacle2=1
+			self.SlugState.obstacle_left=1
 		else:
-			self.SlugState.obstacle2=0
+			self.SlugState.obstacle_left=0
 		# msg.data
 
 	def obstacle3_Callback(self,msg):
 		# rospy.loginfo('obstacle3_callback')
 		# self.SlugState.obstacle3=int(msg.data)
 		if msg.data==True:
-			self.SlugState.obstacle3=1
+			self.SlugState.obstacle_right=1
 		else:
-			self.SlugState.obstacle3=0
+			self.SlugState.obstacle_right=0
 
 	#def Task_SM_Callback(self,msg):
 		# self.Initial_time = msg.data[0]
