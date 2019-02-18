@@ -106,6 +106,18 @@ def receivepose_action():
     result_action_state = receivepose_client.get_state()
     return result_action_state 
 
+def putdown_action():
+    goal = villa_manipulation.msg.ForcePutDownGoal()
+    goal.place_pose =PoseStamped()
+    goal.place_pose.pose.position.x=0.57
+    goal.place_pose.pose.position.y=-1.3
+    goal.place_pose.pose.position.z=0.70
+    goal.place_pose.header.frame_id='map'
+ 
+    put_down_client.send_goal(goal)
+    put_down_client.wait_for_result()
+    result_action_state = put_down_client.get_state()
+    return result_action_state 
 	
 def generate_send_goal(cmd_idx, cmd_state):
 
@@ -411,12 +423,15 @@ cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
 slug_cli = actionlib.SimpleActionClient('slug_controller', Sm_StateAction)
 givepose_client = actionlib.SimpleActionClient('givepose_action',villa_manipulation.msg.HandoverAction)
 receivepose_client= actionlib.SimpleActionClient('receivepose_action',villa_manipulation.msg.HandoverAction)
+put_down_client = actionlib.SimpleActionClient('putdown_action',villa_manipulation.msg.ForcePutDownAction)
+ 
 
 # wait for the action server to establish connection
 cli.wait_for_server()
 slug_cli.wait_for_server()
 givepose_client.wait_for_server()
 receivepose_client.wait_for_server()
+put_down_client.wait_for_server()
 
 
 if __name__=='__main__':
