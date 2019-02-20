@@ -335,8 +335,9 @@ class Controller():
         def Task_SM_Callback(self,msg):
                 # self.Initial_time = msg.data[0]
                 # self.Initial_time = rospy.get_time()
-                self.complte_dropoff_success = int(msg.data[0])
-                self.complte_dropoff_tries = int(msg.data[1])
+                self.complete_dropoff_success = int(msg.data[0])
+                self.complete_dropoff_tries = int(msg.data[1])
+                rospy.loginfo("success : %d, tries : %d", self.complete_dropoff_success, self.complete_dropoff_tries)
 
 
 	def calculate_statesvariables(self, time_duration):

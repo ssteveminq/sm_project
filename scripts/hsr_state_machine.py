@@ -6,7 +6,7 @@ from sm_project.msg import Sm_StateAction, Sm_StateGoal
 from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from std_msgs.msg import Int8MultiArray
+from std_msgs.msg import Int32MultiArray
 from tmc_msgs.msg import BatteryState
 from hsrb_interface import Robot
 from hsrb_interface import exceptions
@@ -207,8 +207,8 @@ def generate_send_goal(cmd_idx, cmd_state, prev_state):
 
 def track_motion_during_duration(counter_in, cmd_state, prev_state):
 	
-	State_pub=rospy.Publisher('SM/current_state', Int8MultiArray, queue_size=10)
-	State_msg = Int8MultiArray()
+	State_pub=rospy.Publisher('SM/current_state', Int32MultiArray, queue_size=10)
+	State_msg = Int32MultiArray()
 
         complete_dropoff_success=0
         complete_dropoff_tries=0
@@ -253,18 +253,23 @@ def track_motion_during_duration(counter_in, cmd_state, prev_state):
                     cmd_idx= -1
                     if cmd_state==0:
                         complete_dropoff_success=1
-                        complete_dropoff_tries=0
+                        complete_dropoff_tries=2
+                        if prev_state!=0:
+                            complete_dropoff_success=1
+                            complete_dropoff_tries=1
+                    
                 elif action_state == GoalStatus.ACTIVE:
                     complete_dropoff_success=0
                     complete_dropoff_tries=1
+                    break;
 
 		iterator=0
 
 
 	battery_msg = rospy.wait_for_message('/hsrb/battery_state', BatteryState)
 	finished_time = rospy.get_time()
-        State_msg.data.append(float(complete_dropoff_success))
-        State_msg.data.append(float(complete_dropoff_tries))
+        State_msg.data.append(complete_dropoff_success)
+        State_msg.data.append(complete_dropoff_tries)
         State_msg.data.append(finished_time)
         State_msg.data.append(battery_msg.power)
         State_msg.data.append(cmd_state)
