@@ -255,7 +255,7 @@ def track_motion_during_duration(counter_in, cmd_state, prev_state):
                         complete_dropoff_success=1
                         complete_dropoff_tries=2
                         if prev_state!=0:
-                            complete_dropoff_success=1
+                            # complete_dropoff_success=1
                             complete_dropoff_tries=1
                     
                 elif action_state == GoalStatus.ACTIVE:

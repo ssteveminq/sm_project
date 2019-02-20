@@ -142,30 +142,30 @@ class Controller():
 						success = True 
 						print "this node_num ", self.node_num 
 
-				match = False  
-				if success == False: 
+				# match = False  
+				# if success == False: 
 		
-					for key, node in self.nodes_dict.items():
-						# there is a bug here ?? need to index properly
-						for key1, node1 in node.items():
-							if all(self.nodes_dict[key][key3] == environment_states[key3] for key3 in environment):
+				# 	for key, node in self.nodes_dict.items():
+				# 		# there is a bug here ?? need to index properly
+				# 		for key1, node1 in node.items():
+				# 			if all(self.nodes_dict[key][key3] == environment_states[key3] for key3 in environment):
 
-								if all(self.nodes_dict[key][key3] == controllable_states[key3] for key3 in controllable):
+				# 				if all(self.nodes_dict[key][key3] == controllable_states[key3] for key3 in controllable):
 								
-								# if self.nodes_dict[key] == self.cur_dictionary:
-									print "NO MATCH"
+				# 				# if self.nodes_dict[key] == self.cur_dictionary:
+				# 					print "NO MATCH"
 									      
-									print "selected key", key 
+				# 					print "selected key", key 
 
 									
-									self.node_num = key 
+				# 					self.node_num = key 
 
-									success = True 
+				# 					success = True 
 
-									match = True 
+				# 					match = True 
 
-								if match == True:
-									break 
+				# 				if match == True:
+				# 					break 
 
 
 		else: 
@@ -216,9 +216,8 @@ class Controller():
 		self.cur_dictionary['workload'] = self.SlugState.workload
 		self.cur_dictionary['complete_work_at_workstation'] = self.SlugState.complete_work_at_workstation
 
-		# TODO: tries and success - sense
-		self.cur_dictionary['complete_dropoff_success'] = self.nodes_dict[self.node_num]['complete_dropoff_success']
-		self.cur_dictionary['complete_dropoff_tries'] = self.nodes_dict[self.node_num]['complete_dropoff_tries']
+		self.cur_dictionary['complete_dropoff_success'] = self.SlugState.complete_dropoff_success  #self.nodes_dict[self.node_num]['complete_dropoff_success']
+		self.cur_dictionary['complete_dropoff_tries'] = self.SlugState.complete_dropoff_tries  #self.nodes_dict[self.node_num]['complete_dropoff_tries']
 
 		# todo: check r_state properly DO WE NEED TO DO THIS?
 		# self.cur_dictionary['r_state'] = self.SlugState.r_state
@@ -390,12 +389,13 @@ class Controller():
 		else: 
 			self.SlugState.wait=1
 
-		# todo: complete dropoff tries
-		self.SlugState.complete_dropoff_tries=0
+		if self.SlugState.r_state == 0:
+			self.SlugState.complete_dropoff_tries=self.complete_dropoff_tries
+			self.SlugState.complete_dropoff_success=self.complete_dropoff_success 
 
-
-		# todo: complete dropoff success
-		self.SlugState.complete_dropoff_success = 0
+		else: 
+			self.SlugState.complete_dropoff_tries=0
+			self.SlugState.complete_dropoff_success=0
 
 
 		if self.SlugState.r_state == 4:
