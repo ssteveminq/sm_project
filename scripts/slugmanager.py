@@ -43,12 +43,14 @@ class Controller():
 		robot_pose_topic="global_pose"
 		rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
 		task_sm_topic='SM/current_state'
-		#rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
+                rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
 
 
 		# initial workload
-		self.previous_workload=13
-		self.SlugState.workload=12
+                self.previous_workload=13
+                self.SlugState.workload=12
+                # self.previous_workload=18
+                # self.SlugState.workload=17
 		self.policy_workload_add_previous=0
 		self.first_move=True  
 		self.remainder=0
@@ -63,6 +65,7 @@ class Controller():
 		rospy.loginfo('action_server_started:%s', self._action_name)
 
 
+		# self.node_num='3278'
 		self.node_num='0'
 		self.prev_node_num=self.node_num
 
@@ -230,9 +233,9 @@ class Controller():
 			self.cur_dictionary['workload_add'] = self.nodes_dict[self.node_num]['workload_add']	
 		self.cur_dictionary['complete_work_with_robot'] = self.nodes_dict[self.node_num]['complete_work_with_robot']
 
-		if self.policy_complete_work_with_robot != self.SlugState.complete_work_with_robot:
-			print "work with robot tracking error"
-			exit()
+		# if self.policy_complete_work_with_robot != self.SlugState.complete_work_with_robot:
+			# print "work with robot tracking error"
+			# exit()
 
 		self.cur_dictionary['next_arriving_at_0'] = self.nodes_dict[self.node_num]['next_arriving_at_0']
 		self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
@@ -329,9 +332,11 @@ class Controller():
 		else:
 			self.SlugState.obstacle_right=0
 
-	#def Task_SM_Callback(self,msg):
-		# self.Initial_time = msg.data[0]
-		#self.Initial_time = rospy.get_time()
+        def Task_SM_Callback(self,msg):
+                # self.Initial_time = msg.data[0]
+                # self.Initial_time = rospy.get_time()
+                self.complte_dropoff_success = int(msg.data[0])
+                self.complte_dropoff_tries = int(msg.data[1])
 
 
 	def calculate_statesvariables(self, time_duration):

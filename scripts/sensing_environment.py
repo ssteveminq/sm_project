@@ -38,10 +38,12 @@ class Environment_Manager(object):
         robot_pose_topic="global_pose"
         rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
         task_sm_topic='SM/current_state'
-        rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
+        rospy.Subscriber(task_sm_topic,Int32MultiArray,self.sm_Callback)
 
         # initial workload
         self.slug_msg.workload=16
+        self.complte_dropoff_success = 0
+        self.complte_dropoff_tries = 0
 
     def publish_slug_state(self):
         curr_time=rospy.get_time()
@@ -79,8 +81,10 @@ class Environment_Manager(object):
         else:
             self.slug_msg.obstacle3=0
 
-    def Task_SM_Callback(self,msg):
-         self.Initial_time = rospy.get_time()
+    def sm_Callback(self,msg):
+        self.Initial_time = rospy.get_time()
+        self.complte_dropoff_success = int(msg->data[0])
+        self.complte_dropoff_tries = int(msg->data[1])
 
 
     def calculate_statesvariables(self, time_duration):
@@ -150,4 +154,3 @@ if __name__ == '__main__':
         rospy.init_node('environment_sensing')
         manager = Environment_Manager(sys.argv[1] if len(sys.argv) >1 else 0.0)
 	manager.listener()	
-
