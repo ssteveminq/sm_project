@@ -159,10 +159,10 @@ def generate_send_goal(cmd_idx, cmd_state, prev_state):
 	elif cmd_state == 2:
 			goal_y = -0.5
 	elif cmd_state == 3:
-			goal_y = -1.0
+			goal_y = -3.0
 	elif cmd_state == 4:
 			
-			goal_y = -2.0
+			goal_y = -4.0
 
 			#move base + receiveepose
 			move_action_state=navigation_action(goal_x,goal_y,goal_yaw)

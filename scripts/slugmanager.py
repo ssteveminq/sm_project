@@ -15,6 +15,9 @@ from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import PoseStamped
 from hsrb_interface import Robot
 
+import os
+import csv
+
 
 class Controller():
 
@@ -71,6 +74,19 @@ class Controller():
 
 		self.next_state=None
 
+
+		# graphing
+		fields = ['time', 'state', 'workload']
+
+		path_location = os.path.dirname(os.path.realpath(__file__))
+		self.results_file = os.path.join(path_location, 'results.csv')
+
+		with open(self.results_file, 'w') as f:
+			f.truncate()
+			writer = csv.writer(f)
+			writer.writerow(fields)		
+			f.close()
+
 	def execute_cb(self, goal):
 		print "execute_cb"
 		# helper variables
@@ -85,6 +101,7 @@ class Controller():
 
 		if self.first_move==True : 
 			self.Initial_time = rospy.get_time()
+			self.start_time = self.Initial_time
 
 		curr_time=rospy.get_time()
 		duration = int(curr_time -self.Initial_time)
@@ -410,6 +427,12 @@ class Controller():
 			self.SlugState.r_state=0
 
 		self.previous_workload=self.SlugState.workload
+
+		results = [rospy.get_time()-self.start_time, self.SlugState.r_state, self.SlugState.workload]
+		with open(self.results_file, 'a') as f:
+			writer = csv.writer(f)
+			writer.writerow(results)
+			f.close()
 
 
 
