@@ -109,11 +109,11 @@ def putdown_action():
     goal.place_pose =PoseStamped()
     goal.place_pose.pose.position.x=1.3
     goal.place_pose.pose.position.y=0.45
-    goal.place_pose.pose.position.z=0.74
+    goal.place_pose.pose.position.z=0.78
     goal.place_pose.header.frame_id='map'
  
     put_down_client.send_goal(goal)
-    put_down_client.wait_for_result(rospy.Duration(35.0))
+    put_down_client.wait_for_result(rospy.Duration(38.0))
     rospy.loginfo("35 seconds passed")
     result_action_state = put_down_client.get_state()
     actionresult= put_down_client.get_result()
