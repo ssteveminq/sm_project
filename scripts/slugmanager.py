@@ -76,7 +76,7 @@ class Controller():
 
 
 		# graphing
-		fields = ['time', 'state', 'workload']
+		fields = ['time', 'state', 'workload', 'complete_work_with_robot', 'tries', 'success', 'obstacle2', 'obstacle3']
 
 		path_location = os.path.dirname(os.path.realpath(__file__))
 		self.results_file = os.path.join(path_location, 'results.csv')
@@ -257,6 +257,14 @@ class Controller():
 		self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
 
 
+		results = [rospy.get_time()-self.start_time, self.cur_dictionary['r_state'], self.cur_dictionary['workload'] , self.cur_dictionary['complete_work_with_robot'], self.SlugState.complete_dropoff_tries, self.SlugState.complete_dropoff_success, self.cur_dictionary['obstacle2'], self.cur_dictionary['obstacle3'] ]
+		with open(self.results_file, 'a') as f:
+			writer = csv.writer(f)
+			writer.writerow(results)
+			f.close()
+
+
+
 	def sm_state_callback(self, msg):
 		# rospy.loginfo('sm_states_updated')
 		self.SlugState=msg
@@ -428,11 +436,6 @@ class Controller():
 
 		self.previous_workload=self.SlugState.workload
 
-		results = [rospy.get_time()-self.start_time, self.SlugState.r_state, self.SlugState.workload]
-		with open(self.results_file, 'a') as f:
-			writer = csv.writer(f)
-			writer.writerow(results)
-			f.close()
 
 
 

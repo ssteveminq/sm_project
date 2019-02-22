@@ -18,6 +18,9 @@ def main():
 	state = [row[1] for row in data]
 	workload = [row[2]/30 for row in data]
 
+	print workload
+
+	print time 
 	map_states(state)
 
 	plt.figure(1)
