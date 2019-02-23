@@ -35,8 +35,8 @@ class Controller():
 		# self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
 		self.SlugState = Slug_state()
 
-                self.findperson_client = actionlib.SimpleActionClient('findperson_action', FindPersonAction)
-                self.findperson_client.wait_for_server()
+				self.findperson_client = actionlib.SimpleActionClient('findperson_action', FindPersonAction)
+				self.findperson_client.wait_for_server()
 
 		#ros subscriber
 		# sm_state_topic='sm/sm_states'
@@ -49,14 +49,19 @@ class Controller():
 		robot_pose_topic="global_pose"
 		rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
 		task_sm_topic='SM/current_state'
-                rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
+		rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
+		human_topic='Is_Human'
+		rospy.Subscriber(human_topic,Bool,self.human_state_callback)
+
+
+				
 
 
 		# initial workload
-                self.previous_workload=13
-                self.SlugState.workload=12
-                # self.previous_workload=18
-                # self.SlugState.workload=17
+				self.previous_workload=13
+				self.SlugState.workload=12
+				# self.previous_workload=18
+				# self.SlugState.workload=17
 		self.policy_workload_add_previous=0
 		self.first_move=True  
 		self.remainder=0
@@ -89,12 +94,12 @@ class Controller():
 			writer = csv.writer(f)
 			writer.writerow(fields)		
 			f.close()
-        def Is_human(self):
-            self.goal =FindPersonGoal()
-            self.goal.start=True
-            self.findperson_client.send_goal(self.goal)
-            self.findperson_client.wait_for_result()
-            return self.findperson_client.get_result().is_person
+		def Is_human(self):
+			self.goal =FindPersonGoal()
+			self.goal.start=True
+			self.findperson_client.send_goal(self.goal)
+			self.findperson_client.wait_for_result()
+			return self.findperson_client.get_result().is_person
 
 	def execute_cb(self, goal):
 		print "execute_cb"
@@ -180,7 +185,7 @@ class Controller():
 								
 				# 				# if self.nodes_dict[key] == self.cur_dictionary:
 				# 					print "NO MATCH"
-									      
+										  
 				# 					print "selected key", key 
 
 									
@@ -278,6 +283,10 @@ class Controller():
 		# rospy.loginfo('sm_states_updated')
 		self.SlugState=msg
 
+	def human_state_callback(self, msg):
+		# rospy.loginfo('sm_states_updated')
+		self.Human_working=msg.data
+
 
 	def loadjsonfiles(self):
 
@@ -365,19 +374,26 @@ class Controller():
 		else:
 			self.SlugState.obstacle_right=0
 
-        def Task_SM_Callback(self,msg):
-                # self.Initial_time = msg.data[0]
-                # self.Initial_time = rospy.get_time()
-                self.complete_dropoff_success = int(msg.data[0])
-                self.complete_dropoff_tries = int(msg.data[1])
-                rospy.loginfo("success : %d, tries : %d", self.complete_dropoff_success, self.complete_dropoff_tries)
+		def Task_SM_Callback(self,msg):
+				# self.Initial_time = msg.data[0]
+				# self.Initial_time = rospy.get_time()
+				self.complete_dropoff_success = int(msg.data[0])
+				self.complete_dropoff_tries = int(msg.data[1])
+				rospy.loginfo("success : %d, tries : %d", self.complete_dropoff_success, self.complete_dropoff_tries)
 
 
 	def calculate_statesvariables(self, time_duration):
-                if self.Is_human():
-                    rospy.loginfo("human exists")
-                else:
-                    rospy.loginfo("human doesn't exists")
+		if self.Is_human():
+			rospy.loginfo("human exists")
+			human_working = True 
+		else:
+			rospy.loginfo("human doesn't exists")
+			human_working = False 
+			while(no_human){
+
+
+
+			}
 
 		print "calculate_statesvariables"
 		# rospy.loginfo('duration %d',int(time_duration))
