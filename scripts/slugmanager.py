@@ -13,6 +13,7 @@ from std_msgs.msg import Int32MultiArray
 from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import PoseStamped
+from gaze_service.msg import FindPersonAction, FindPersonGoal, FindPersonResult
 from hsrb_interface import Robot
 
 import os
@@ -33,7 +34,9 @@ class Controller():
 
 		# self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
 		self.SlugState = Slug_state()
-		
+
+                self.findperson_client = actionlib.SimpleActionClient('findperson_action', FindPersonAction)
+                self.findperson_client.wait_for_server()
 
 		#ros subscriber
 		# sm_state_topic='sm/sm_states'
@@ -86,6 +89,12 @@ class Controller():
 			writer = csv.writer(f)
 			writer.writerow(fields)		
 			f.close()
+        def Is_human(self):
+            self.goal =FindPersonGoal()
+            self.goal.start=True
+            self.findperson_client.send_goal(self.goal)
+            self.findperson_client.wait_for_result()
+            return self.findperson_client.get_result().is_person
 
 	def execute_cb(self, goal):
 		print "execute_cb"
@@ -365,6 +374,11 @@ class Controller():
 
 
 	def calculate_statesvariables(self, time_duration):
+                if self.Is_human():
+                    rospy.loginfo("human exists")
+                else:
+                    rospy.loginfo("human doesn't exists")
+
 		print "calculate_statesvariables"
 		# rospy.loginfo('duration %d',int(time_duration))
 
