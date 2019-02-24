@@ -259,9 +259,13 @@ def track_motion_during_duration(counter_in, cmd_state, prev_state):
 					complete_dropoff_tries=1
 			
 		elif action_state == GoalStatus.ACTIVE:
-			complete_dropoff_success=0
-			complete_dropoff_tries=1
-			break;
+                    complete_dropoff_success=0
+                    complete_dropoff_tries=1
+                    break
+                else:
+                    complete_dropoff_success=0
+                    complete_dropoff_tries=1
+                    break
 
 		iterator=0
 
@@ -290,23 +294,27 @@ class S_0(smach.State):
 
 		tts.say("Executing State 0")
 		action_state = track_motion_during_duration(userdata.S0_counter_in, userdata.S0_desired_state_in, userdata.S0_previous_state_in)
+                rospy.loginfo("S0_action_state: %d", action_state)
 
 		if action_state == GoalStatus.SUCCEEDED:
-			userdata.S0_counter_out=userdata.S0_counter_in+1
+                    userdata.S0_counter_out=userdata.S0_counter_in+1
+                    print "userdata.S0_counter out", userdata.S0_counter_out
+                    userdata.S0_previous_state_out = userdata.S0_desired_state_in
+                    userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
+                    #previous_action=0
+                    return output_state
 
-			print "userdata.S0_counter out", userdata.S0_counter_out
+		elif action_state == GoalStatus.Active:
+                    userdata.S0_counter_out=userdata.S0_counter_in+1
+                    print "userdata.S0_counter out", userdata.S0_counter_out
+                    userdata.S0_previous_state_out = userdata.S0_desired_state_in
+                    userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
+                else:
+                    userdata.S0_counter_out=userdata.S0_counter_in+1
+                    print "userdata.S0_counter out", userdata.S0_counter_out
+                    userdata.S0_previous_state_out = userdata.S0_desired_state_in
+                    userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
 
-			userdata.S0_previous_state_out = userdata.S0_desired_state_in
-
-			userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
-			#previous_action=0
-
-			return output_state
-		if action_state == GoalStatus.Active:
-			userdata.S0_counter_out=userdata.S0_counter_in+1
-			print "userdata.S0_counter out", userdata.S0_counter_out
-			userdata.S0_previous_state_out = userdata.S0_desired_state_in
-			userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
 
 		else:
 			"goal was not achieved"
