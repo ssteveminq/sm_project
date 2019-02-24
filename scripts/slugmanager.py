@@ -24,81 +24,84 @@ class Controller():
 
 	def __init__(self, name,wait=0.0):
 
-		self.file_name=''
-		self.trans_name=''
-		self.path_location=''
+			self.file_name=''
+			self.trans_name=''
+			self.path_location=''
 
-		self.num_nodes = 0 
-		self.loadjsonfiles()
-		self.name_and_bits = self.get_lookup()
+			self.num_nodes = 0 
+			self.loadjsonfiles()
+			self.name_and_bits = self.get_lookup()
 
-		# self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
-		self.SlugState = Slug_state()
+			# self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
+			self.SlugState = Slug_state()
 
-		self.findperson_client = actionlib.SimpleActionClient('findperson_action', FindPersonAction)
-		self.findperson_client.wait_for_server()
-		# self.Is_human(2.0)
-		# self.findperson_client.
+			print "here"
 
-		#ros subscriber
-		# sm_state_topic='sm/sm_states'
-		# rospy.Subscriber(sm_state_topic,Slug_state,self.sm_state_callback)
+			self.findperson_client = actionlib.SimpleActionClient('findperson_action', FindPersonAction)
+			self.findperson_client.wait_for_server()
+			
+			# self.Is_human(2.0)
+			# self.findperson_client.
 
-		obstacle2_topic="/obstacle2_Is_Occupied"
-		rospy.Subscriber(obstacle2_topic, Bool, self.obstacle2_Callback)
-		obstacle3_topic="/obstacle3_Is_Occupied"
-		rospy.Subscriber(obstacle3_topic, Bool, self.obstacle3_Callback)
-		robot_pose_topic="global_pose"
-		rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
-		task_sm_topic='SM/current_state'
-		rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
-		human_topic='Is_Human'
-		rospy.Subscriber(human_topic,Bool,self.human_state_callback)
-		print "here"
+			#ros subscriber
+			# sm_state_topic='sm/sm_states'
+			# rospy.Subscriber(sm_state_topic,Slug_state,self.sm_state_callback)
+
+			obstacle2_topic="/obstacle2_Is_Occupied"
+			rospy.Subscriber(obstacle2_topic, Bool, self.obstacle2_Callback)
+			obstacle3_topic="/obstacle3_Is_Occupied"
+			rospy.Subscriber(obstacle3_topic, Bool, self.obstacle3_Callback)
+			robot_pose_topic="global_pose"
+			rospy.Subscriber(robot_pose_topic, PoseStamped, self.pose_callback)
+			task_sm_topic='SM/current_state'
+			rospy.Subscriber(task_sm_topic,Int32MultiArray,self.Task_SM_Callback)
+			human_topic='Is_Human'
+			rospy.Subscriber(human_topic,Bool,self.human_state_callback)
+			print "here2"
 
 
 
 
 
 	# initial workload
-		self.previous_workload=13
-		self.SlugState.workload=12
+			self.previous_workload=13
+			self.SlugState.workload=12
 	# self.previous_workload=18
 	# self.SlugState.workload=17
-		self.policy_workload_add_previous=0
-		self.first_move=True  
-		self.remainder=0
-		self.human_at_start_of_check=None 
+			self.policy_workload_add_previous=0
+			self.first_move=True  
+			self.remainder=0
+			self.human_at_start_of_check=None 
 
-		# rospy.loginfo('action_server_preparing:%s', self._action_name)
+			# rospy.loginfo('action_server_preparing:%s', self._action_name)
 
-		#rosaction_server
-		self._feedback = Sm_StateFeedback()
-		self._result = Sm_StateResult()
-		self._action_name = name
-		self._as = actionlib.SimpleActionServer(self._action_name, Sm_StateAction, execute_cb=self.execute_cb, auto_start = False)
-		self._as.start()
-		rospy.loginfo('action_server_started:%s', self._action_name)
-
-
-		# self.node_num='3278'
-		self.node_num='0'
-		self.prev_node_num=self.node_num
-
-		self.next_state=None
+			#rosaction_server
+			self._feedback = Sm_StateFeedback()
+			self._result = Sm_StateResult()
+			self._action_name = name
+			self._as = actionlib.SimpleActionServer(self._action_name, Sm_StateAction, execute_cb=self.execute_cb, auto_start = False)
+			self._as.start()
+			rospy.loginfo('action_server_started:%s', self._action_name)
 
 
-		# graphing
-		fields = ['time', 'state', 'workload', 'complete_work_with_robot', 'tries', 'success', 'obstacle2', 'obstacle3', 'human_at_start_of_check']
+			# self.node_num='3278'
+			self.node_num='0'
+			self.prev_node_num=self.node_num
 
-		path_location = os.path.dirname(os.path.realpath(__file__))
-		self.results_file = os.path.join(path_location, 'results.csv')
+			self.next_state=None
 
-		# with open(self.results_file, 'w') as f:
-			# f.truncate()
-			# writer = csv.writer(f)
-			# writer.writerow(fields)		
-			# f.close()
+
+			# graphing
+			fields = ['time', 'state', 'workload', 'complete_work_with_robot', 'tries', 'success', 'obstacle2', 'obstacle3', 'human_at_start_of_check']
+
+			path_location = os.path.dirname(os.path.realpath(__file__))
+			self.results_file = os.path.join(path_location, 'results.csv')
+
+			with open(self.results_file, 'w') as f:
+				f.truncate()
+				writer = csv.writer(f)
+				writer.writerow(fields)		
+				f.close()
 
 
 	def Is_human(self, time_duration_=3600):
@@ -107,14 +110,11 @@ class Controller():
 		self.findperson_client.send_goal(self.goal)
 		self.findperson_client.wait_for_result(rospy.Duration(time_duration_))
 		result_=FindPersonResult()
-				
 		result_=self.findperson_client.get_result()
 		print result_
 		# rospy.loginfo("Is_human_result %d",result_.is_pserson)
-				
-		# is_person=result_.is_person
-
-		return True
+                is_person=result_.is_person
+		return is_person
 
 	def execute_cb(self, goal):
 		print "execute_cb"
@@ -306,7 +306,6 @@ class Controller():
 		# rospy.loginfo('sm_states_updated')
 		self.Human_working=msg.data
 		# self.Human_working
-		human_working = True
 
 
 	def loadjsonfiles(self):
@@ -412,26 +411,26 @@ class Controller():
 		self.policy_complete_work_with_robot=self.nodes_dict[self.node_num]['complete_work_with_robot']
 		self.policy_arriving_at_0= self.nodes_dict[self.node_num]['next_arriving_at_0']
 
-		self.human_at_start_of_check = True 
+		# self.human_at_start_of_check = True 
 	
 		
-		# if self.Human_working==False:
-		# 	self.human_at_start_of_check = False
+		if self.Human_working==False:
+				self.human_at_start_of_check = False
 
-		# 	rospy.loginfo("human does not exists")
+				rospy.loginfo("human does not exists")
 
-		# 	# waiting for human to come back
-		# 	if self.Is_human():
-		# 		pass
+				# waiting for human to come back
+				if self.Is_human():
+						pass
 
-		# 	# waiting while human starts working
-		# 	time_to_wait = 7
-		# 	rospy.sleep(time_to_wait)
-		# 	rospy.loginfo("waited for 7 seconds")
- 
-		# else:
-		# 	rospy.loginfo("human exists")
-		# 	self.human_at_start_of_check = True 
+				# waiting while human starts working
+				time_to_wait = 7
+				rospy.sleep(time_to_wait)
+				rospy.loginfo("waited for 7 seconds")
+
+		else:
+				rospy.loginfo("human exists")
+				self.human_at_start_of_check = True 
 	
 
 		self.SlugState.r_state=self.policy_r_state

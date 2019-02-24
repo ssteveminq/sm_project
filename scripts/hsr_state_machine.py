@@ -96,6 +96,12 @@ def navigation_action(goal_x,goal_y,goal_yaw):
 	# result_action_state = givepose_client.get_state()
 	# return result_action_state 
 
+def homepose_action():
+        goal = villa_manipulation.msg.HandoverGoal()
+        homepose_client.send_goal(goal)
+        homepose_client.wait_for_result()
+        homeresult_action_state = homepose_client.get_state()
+	return homeresult_action_state
 
 def receivepose_action():
 	goal = villa_manipulation.msg.HandoverGoal()
@@ -107,7 +113,7 @@ def receivepose_action():
 def putdown_action():
 	goal = villa_manipulation.msg.ForcePutDownGoal()
 	goal.place_pose =PoseStamped()
-	goal.place_pose.pose.position.x=1.3
+	goal.place_pose.pose.position.x=1.2
 	goal.place_pose.pose.position.y=0.45
 	goal.place_pose.pose.position.z=0.78
 	goal.place_pose.header.frame_id='map'
@@ -158,6 +164,7 @@ def generate_send_goal(cmd_idx, cmd_state, prev_state):
                             r_action_state=g_action_state
 
 	elif cmd_state == 1:
+                homepose_action()
 		goal_y = -0.0
 	elif cmd_state == 2:
 		goal_y = -0.5
@@ -474,6 +481,7 @@ rospy.sleep(1)
 cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
 slug_cli = actionlib.SimpleActionClient('slug_controller', Sm_StateAction)
 # givepose_client = actionlib.SimpleActionClient('givepose_action',villa_manipulation.msg.HandoverAction)
+homepose_client = actionlib.SimpleActionClient('homepose_action',villa_manipulation.msg.HandoverAction)
 receivepose_client= actionlib.SimpleActionClient('receivepose_action',villa_manipulation.msg.HandoverAction)
 put_down_client = actionlib.SimpleActionClient('putdown_action',villa_manipulation.msg.ForcePutDownAction)
  
@@ -482,6 +490,7 @@ put_down_client = actionlib.SimpleActionClient('putdown_action',villa_manipulati
 cli.wait_for_server()
 slug_cli.wait_for_server()
 # givepose_client.wait_for_server()
+homepose_client.wait_for_server()
 receivepose_client.wait_for_server()
 put_down_client.wait_for_server()
 
