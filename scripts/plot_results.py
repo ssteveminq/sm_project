@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
 
 def map_states(row):
@@ -17,6 +18,12 @@ def main():
 	time = [row[0] for row in data]
 	state = [row[1] for row in data]
 	workload = [row[2]/30 for row in data]
+	complete_work_with_robot = [row[3] for row in data]
+	tries = [row[4] for row in data]
+	success = [row[5] for row in data]
+	obstacle1 = [row[6]*1 for row in data]
+	obstacle2 = [row[7]*2 for row in data]
+	human_at_start_of_check = [row[8] for row in data]
 
 	print workload
 
@@ -24,11 +31,17 @@ def main():
 	map_states(state)
 
 	plt.figure(1)
-	plt.plot(time, state)
-	plt.plot(time, workload)
+	plt.plot(time, state, 'k--', label='state')
+	plt.scatter(time,state,c=cm.magma(complete_work_with_robot))
+	plt.plot(time, workload, '--', label='workload')
+	#plt.scatter(time,workload)
+	plt.plot(time, obstacle1, 'o', label='obstacle1')
+	plt.plot(time, obstacle2, 'o', label='obstacle2')
 	plt.xlabel('time (s)')
-
+	plt.legend()
 	plt.grid()
+	axes = plt.gca()
+	axes.set_ylim([-.1,3.1])
 
 	plt.show()
 
