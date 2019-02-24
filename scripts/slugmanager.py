@@ -35,8 +35,10 @@ class Controller():
 		# self.states_pub=rospy.Publisher("/sm/sm_states",Slug_state,queue_size=50)
 		self.SlugState = Slug_state()
 
-				self.findperson_client = actionlib.SimpleActionClient('findperson_action', FindPersonAction)
-				self.findperson_client.wait_for_server()
+		self.findperson_client = actionlib.SimpleActionClient('findperson_action', FindPersonAction)
+		self.findperson_client.wait_for_server()
+		self.Is_human(2.0)
+		# self.findperson_client.
 
 		#ros subscriber
 		# sm_state_topic='sm/sm_states'
@@ -58,13 +60,14 @@ class Controller():
 
 
 		# initial workload
-				self.previous_workload=13
-				self.SlugState.workload=12
-				# self.previous_workload=18
-				# self.SlugState.workload=17
+		self.previous_workload=13
+		self.SlugState.workload=12
+		# self.previous_workload=18
+		# self.SlugState.workload=17
 		self.policy_workload_add_previous=0
 		self.first_move=True  
 		self.remainder=0
+		self.human_at_start_of_check=None 
 
 
 		#rosaction_server
@@ -84,7 +87,7 @@ class Controller():
 
 
 		# graphing
-		fields = ['time', 'state', 'workload', 'complete_work_with_robot', 'tries', 'success', 'obstacle2', 'obstacle3']
+		fields = ['time', 'state', 'workload', 'complete_work_with_robot', 'tries', 'success', 'obstacle2', 'obstacle3', 'human_at_start_of_check']
 
 		path_location = os.path.dirname(os.path.realpath(__file__))
 		self.results_file = os.path.join(path_location, 'results.csv')
@@ -94,12 +97,14 @@ class Controller():
 			writer = csv.writer(f)
 			writer.writerow(fields)		
 			f.close()
-		def Is_human(self):
-			self.goal =FindPersonGoal()
-			self.goal.start=True
-			self.findperson_client.send_goal(self.goal)
-			self.findperson_client.wait_for_result()
-			return self.findperson_client.get_result().is_person
+
+
+	def Is_human(self, time_duration_=3600):
+		self.goal =FindPersonGoal()
+		self.goal.start=True
+		self.findperson_client.send_goal(self.goal)
+		self.findperson_client.wait_for_result(rospy.Duration(time_duration_))
+		return self.findperson_client.get_result().is_person
 
 	def execute_cb(self, goal):
 		print "execute_cb"
@@ -120,6 +125,7 @@ class Controller():
 		curr_time=rospy.get_time()
 		duration = int(curr_time -self.Initial_time)
 		self.calculate_statesvariables(duration)
+		curr_time=rospy.get_time()
 		self.Initial_time = curr_time
 
 		rospy.loginfo('action_server_executed') 
@@ -159,8 +165,8 @@ class Controller():
 
 		self.transition_options = [str(i) for i in self.transitions_dict[self.prev_node_num]]
 
-		print "transition options"
-		print self.transition_options
+		# print "transition options"
+		# print self.transition_options
 
 		if self.first_move==False: 
 
@@ -171,10 +177,13 @@ class Controller():
 					if all(self.nodes_dict[node_options][key] == environment_states[key] for key in environment):
 						self.node_num = node_options
 						success = True 
-						print "this node_num ", self.node_num 
+						# print "this node_num ", self.node_num 
 
-				# match = False  
-				# if success == False: 
+				match = False  
+				if success == False: 
+
+					print "no transition match"
+					exit()
 		
 				# 	for key, node in self.nodes_dict.items():
 				# 		# there is a bug here ?? need to index properly
@@ -208,9 +217,9 @@ class Controller():
 		self.prev_node_num=self.node_num
 		# where to go next
 		self.transition_options = [str(i) for i in self.transitions_dict[self.node_num]]
-		print "next transition_options", self.transition_options
+		# print "next transition_options", self.transition_options
 		self.node_num=(random.choice(self.transition_options)) 
-		print "next node_num ", self.node_num 
+		# print "next node_num ", self.node_num 
 
 		self.next_state=self.nodes_dict[self.node_num]['r_state']
 
@@ -271,7 +280,7 @@ class Controller():
 		self.cur_dictionary['workload_stays_constant']=self.SlugState.workload_stays_constant
 
 
-		results = [rospy.get_time()-self.start_time, self.cur_dictionary['r_state'], self.cur_dictionary['workload'] , self.cur_dictionary['complete_work_with_robot'], self.SlugState.complete_dropoff_tries, self.SlugState.complete_dropoff_success, self.cur_dictionary['obstacle2'], self.cur_dictionary['obstacle3'] ]
+		results = [rospy.get_time()-self.start_time, self.cur_dictionary['r_state'], self.cur_dictionary['workload'] , self.cur_dictionary['complete_work_with_robot'], self.SlugState.complete_dropoff_tries, self.SlugState.complete_dropoff_success, self.cur_dictionary['obstacle2'], self.cur_dictionary['obstacle3'] , self.human_at_start_of_check]
 		with open(self.results_file, 'a') as f:
 			writer = csv.writer(f)
 			writer.writerow(results)
@@ -286,6 +295,8 @@ class Controller():
 	def human_state_callback(self, msg):
 		# rospy.loginfo('sm_states_updated')
 		self.Human_working=msg.data
+		# self.Human_working
+		# human_working = False
 
 
 	def loadjsonfiles(self):
@@ -374,29 +385,16 @@ class Controller():
 		else:
 			self.SlugState.obstacle_right=0
 
-		def Task_SM_Callback(self,msg):
-				# self.Initial_time = msg.data[0]
-				# self.Initial_time = rospy.get_time()
-				self.complete_dropoff_success = int(msg.data[0])
-				self.complete_dropoff_tries = int(msg.data[1])
-				rospy.loginfo("success : %d, tries : %d", self.complete_dropoff_success, self.complete_dropoff_tries)
+	def Task_SM_Callback(self,msg):
+			# self.Initial_time = msg.data[0]
+			# self.Initial_time = rospy.get_time()
+			self.complete_dropoff_success = int(msg.data[0])
+			self.complete_dropoff_tries = int(msg.data[1])
+			rospy.loginfo("success : %d, tries : %d", self.complete_dropoff_success, self.complete_dropoff_tries)
 
 
 	def calculate_statesvariables(self, time_duration):
-		if self.Is_human():
-			rospy.loginfo("human exists")
-			human_working = True 
-		else:
-			rospy.loginfo("human doesn't exists")
-			human_working = False 
-			while(no_human){
-
-
-
-			}
-
-		print "calculate_statesvariables"
-		# rospy.loginfo('duration %d',int(time_duration))
+		
 
 		self.policy_r_state= self.nodes_dict[self.node_num]['r_state']
 		self.policy_workload_add= self.nodes_dict[self.node_num]['workload_add']
@@ -404,25 +402,47 @@ class Controller():
 		self.policy_complete_work_with_robot=self.nodes_dict[self.node_num]['complete_work_with_robot']
 		self.policy_arriving_at_0= self.nodes_dict[self.node_num]['next_arriving_at_0']
 
-		# todo: sense the robot state
+		self.human_at_start_of_check = True 
+	
+		
+		# if self.Human_working==False:
+		# 	self.human_at_start_of_check = False
+
+		# 	rospy.loginfo("human does not exists")
+
+		# 	# waiting for human to come back
+		# 	if self.Is_human():
+		# 		pass
+
+		# 	# waiting while human starts working
+		# 	time_to_wait = 7
+		# 	rospy.sleep(time_to_wait)
+		# 	rospy.loginfo("waited for 7 seconds")
+ 
+		# else:
+		# 	rospy.loginfo("human exists")
+		# 	self.human_at_start_of_check = True 
+	
+
 		self.SlugState.r_state=self.policy_r_state
-
-		print "time_duration",int(time_duration)
-		print "remainder", self.remainder
-		print "int(subtraction_amount)", int( (time_duration+self.remainder) / 10)
-
-
-		print "self.SlugState.workload", self.SlugState.workload
 
 		#calculate workload
 		if self.SlugState.r_state != 4:
-			self.SlugState.workload=self.SlugState.workload-int( (time_duration+self.remainder) / 10)
-			self.remainder = int( (time_duration+self.remainder) % 10)
+			if self.human_at_start_of_check == True:
+				working_time = time_duration
+			else: 
+				working_time = time_to_wait
+
+			print "time_duration",int(time_duration)
+			print "working_time", working_time
+
+
+			self.SlugState.workload=self.SlugState.workload-int( (working_time+self.remainder) / 10)
+			self.remainder = int( (working_time+self.remainder) % 10)
 		else: 
 			self.SlugState.workload=self.SlugState.workload+self.policy_workload_add_previous
 			self.remainder=0
 
-		print "self.SlugState.workload", self.SlugState.workload
 
 		# check if workload changes
 		if self.previous_workload == self.SlugState.workload:
