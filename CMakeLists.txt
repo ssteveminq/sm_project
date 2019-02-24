@@ -70,6 +70,7 @@ catkin_package(
   actionlib
   actionlib_msgs
   villa_manipulation
+  gaze_service
  )
 
 include_directories(
