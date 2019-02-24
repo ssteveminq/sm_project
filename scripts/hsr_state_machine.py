@@ -89,12 +89,12 @@ def navigation_action(goal_x,goal_y,goal_yaw):
 
 	return result_action_state 
 
-def givepose_action():
-	goal = villa_manipulation.msg.HandoverGoal()
-	givepose_client.send_goal(goal)
-	givepose_client.wait_for_result()
-	result_action_state = givepose_client.get_state()
-	return result_action_state 
+# def givepose_action():
+	# goal = villa_manipulation.msg.HandoverGoal()
+	# givepose_client.send_goal(goal)
+	# givepose_client.wait_for_result()
+	# result_action_state = givepose_client.get_state()
+	# return result_action_state 
 
 
 def receivepose_action():
@@ -114,9 +114,10 @@ def putdown_action():
  
 	put_down_client.send_goal(goal)
 	put_down_client.wait_for_result(rospy.Duration(38.0))
-	rospy.loginfo("35 seconds passed")
+	rospy.loginfo("38 seconds passed")
 	result_action_state = put_down_client.get_state()
 	actionresult= put_down_client.get_result()
+	print "----putdown_action----"
 	print actionresult
 	# rospy.loginfo("putdown_actionresult: %d", actionresult.touched)
 	# rospy.loginfo("action_result: %d", actionresult)
@@ -140,40 +141,43 @@ def generate_send_goal(cmd_idx, cmd_state, prev_state):
 	# cmd_state = desired_states[cmd_idx]
 
 	if cmd_state == 0:
-						if prev_state==0:
-						   Move_Base = False
-						   # r_action_state= put_down_client.get_state()
-						   r_action_state=GoalStatus.SUCCEEDED
-						   print "trial dropoff_action_state", r_action_state
-						else:
-							goal_y = -0.0
-							move_action_state=navigation_action(goal_x,goal_y,goal_yaw)
-
-							if move_action_state==GoalStatus.SUCCEEDED:
-								g_action_state=putdown_action()
-								# g_action_state=givepose_action()
-								r_action_state=g_action_state
+		if prev_state==0:
+			Move_Base = False
+			# r_action_state= put_down_client.get_state()
+			r_action_state=GoalStatus.SUCCEEDED
+			print "trial dropoff_action_state", r_action_state
+		else:
+			goal_y = -0.0
+			move_action_state=navigation_action(goal_x,goal_y,goal_yaw)
+			if move_action_state==GoalStatus.SUCCEEDED:
+				g_action_state=putdown_action()
+				# g_action_state=givepose_action()
+				r_action_state=g_action_state
+                        else:
+                            g_action_state=putdown_action()
+                            r_action_state=g_action_state
 
 	elif cmd_state == 1:
-			goal_y = -0.0
+		goal_y = -0.0
 	elif cmd_state == 2:
-			goal_y = -0.5
+		goal_y = -0.5
 	elif cmd_state == 3:
-			goal_y = -3.0
+		goal_y = -3.0
 	elif cmd_state == 4:
 			
-			goal_y = -4.0
+		goal_y = -4.0
 
-			#move base + receiveepose
-			move_action_state=navigation_action(goal_x,goal_y,goal_yaw)
-			if move_action_state==GoalStatus.SUCCEEDED and prev_state!=4:
-				receive_action_state=receivepose_action()
-			#the case should wait? 
-			if prev_state==4:
-				receive_action_state=GoalStatus.SUCCEEDED
+		#move base + receiveepose
+		move_action_state=navigation_action(goal_x,goal_y,goal_yaw)
+		if move_action_state==GoalStatus.SUCCEEDED and prev_state!=4:
+					receive_action_state=receivepose_action()
+		#the case should wait? 
+		if prev_state==4:
+					receive_action_state=GoalStatus.SUCCEEDED
 				 
 	else:  
-			goal_y = -2.0
+		goal_y = -2.0
+
 
 	if Move_Base:
 		r_action_state=navigation_action(goal_x,goal_y,goal_yaw)
@@ -252,20 +256,20 @@ def track_motion_during_duration(counter_in, cmd_state, prev_state):
 			"duration time: %s, action_state %s," % (duration, action_state)
 			cmd_idx= -1
 			if cmd_state==0:
-				complete_dropoff_success=1
-				complete_dropoff_tries=2
-				if prev_state!=0:
-					# complete_dropoff_success=1
-					complete_dropoff_tries=1
+                            complete_dropoff_success=1
+                            complete_dropoff_tries=2
+                            if prev_state!=0:
+                                complete_dropoff_success=0
+                                complete_dropoff_tries=1
 			
 		elif action_state == GoalStatus.ACTIVE:
-                    complete_dropoff_success=0
-                    complete_dropoff_tries=1
-                    break
-                else:
-                    complete_dropoff_success=0
-                    complete_dropoff_tries=1
-                    break
+			complete_dropoff_success=0
+			complete_dropoff_tries=1
+			break
+		else:
+			complete_dropoff_success=0
+			complete_dropoff_tries=1
+			break
 
 		iterator=0
 
@@ -294,31 +298,37 @@ class S_0(smach.State):
 
 		tts.say("Executing State 0")
 		action_state = track_motion_during_duration(userdata.S0_counter_in, userdata.S0_desired_state_in, userdata.S0_previous_state_in)
-                rospy.loginfo("S0_action_state: %d", action_state)
+		rospy.loginfo("S0_action_state: %d", action_state)
 
 		if action_state == GoalStatus.SUCCEEDED:
-                    userdata.S0_counter_out=userdata.S0_counter_in+1
-                    print "userdata.S0_counter out", userdata.S0_counter_out
-                    userdata.S0_previous_state_out = userdata.S0_desired_state_in
-                    userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
-                    #previous_action=0
-                    return output_state
+			userdata.S0_counter_out=userdata.S0_counter_in+1
+			print "userdata.S0_counter out", userdata.S0_counter_out
+			userdata.S0_previous_state_out = userdata.S0_desired_state_in
+			userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
+			#previous_action=0
+			return output_state
 
 		elif action_state == GoalStatus.Active:
-                    userdata.S0_counter_out=userdata.S0_counter_in+1
-                    print "userdata.S0_counter out", userdata.S0_counter_out
-                    userdata.S0_previous_state_out = userdata.S0_desired_state_in
-                    userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
-                else:
-                    userdata.S0_counter_out=userdata.S0_counter_in+1
-                    print "userdata.S0_counter out", userdata.S0_counter_out
-                    userdata.S0_previous_state_out = userdata.S0_desired_state_in
-                    userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
-
+			userdata.S0_counter_out=userdata.S0_counter_in+1
+			print "userdata.S0_counter out", userdata.S0_counter_out
+			userdata.S0_previous_state_out = userdata.S0_desired_state_in
+			userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
+                        return 'GO_S0'
 
 		else:
-			"goal was not achieved"
-			return 'end_demo'
+			# "goal was not achieved"
+			rospy.loginfo("neither succeeded or active")
+			userdata.S0_counter_out=userdata.S0_counter_in+1
+			print "userdata.S0_counter out", userdata.S0_counter_out
+			userdata.S0_previous_state_out = userdata.S0_desired_state_in
+			userdata.S0_desired_state_out, output_state = get_action(userdata.S0_counter_out)
+                        return 'GO_S0'
+
+			# return 'end_demo'
+
+		# else:
+			# "goal was not achieved"
+			# return 'end_demo'
 			
 		# if state_index == length_state_array
 						# return 'end_demo'
@@ -463,7 +473,7 @@ rospy.sleep(1)
 
 cli = actionlib.SimpleActionClient('/move_base/move', MoveBaseAction)
 slug_cli = actionlib.SimpleActionClient('slug_controller', Sm_StateAction)
-givepose_client = actionlib.SimpleActionClient('givepose_action',villa_manipulation.msg.HandoverAction)
+# givepose_client = actionlib.SimpleActionClient('givepose_action',villa_manipulation.msg.HandoverAction)
 receivepose_client= actionlib.SimpleActionClient('receivepose_action',villa_manipulation.msg.HandoverAction)
 put_down_client = actionlib.SimpleActionClient('putdown_action',villa_manipulation.msg.ForcePutDownAction)
  
@@ -471,16 +481,18 @@ put_down_client = actionlib.SimpleActionClient('putdown_action',villa_manipulati
 # wait for the action server to establish connection
 cli.wait_for_server()
 slug_cli.wait_for_server()
-givepose_client.wait_for_server()
+# givepose_client.wait_for_server()
 receivepose_client.wait_for_server()
 put_down_client.wait_for_server()
 
 
 if __name__=='__main__':
 	# create SMACH state machine
+	print "hello"
 	sm = smach.StateMachine(outcomes=['stop'])
 	# sm.userdata.desired_states =desired_states
 	sm.userdata.state_index=0
+	rospy.loginfo("here")
 	sm.userdata.current_desired_state=get_policy()
 	sm.userdata.previous_desired_state=sm.userdata.current_desired_state
 	#previous_action=sm.userdata.current_desired_state
