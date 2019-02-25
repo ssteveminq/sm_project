@@ -109,12 +109,17 @@ class Controller():
 		self.goal.start=True
 		self.findperson_client.send_goal(self.goal)
 		self.findperson_client.wait_for_result(rospy.Duration(time_duration_))
-		result_=FindPersonResult()
+		# result_=FindPersonResult()
 		result_=self.findperson_client.get_result()
-		print result_
-		# rospy.loginfo("Is_human_result %d",result_.is_pserson)
-                is_person=result_.is_person
-		return is_person
+                print "Is_human result", result_
+                if result_==None:
+                    return False
+                else:
+                    return True
+
+                # rospy.loginfo("Is_human_result %d",result_.is_pserson)
+                # is_person=result_.is_person
+		# return result_
 
 	def execute_cb(self, goal):
 		print "execute_cb"
@@ -414,7 +419,8 @@ class Controller():
 		# self.human_at_start_of_check = True 
 	
 		
-		if self.Human_working==False:
+		# if self.Human_working==False:
+		if self.Is_human(5.0)==False:
 				self.human_at_start_of_check = False
 
 				rospy.loginfo("human does not exists")
