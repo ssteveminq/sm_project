@@ -113,8 +113,8 @@ def receivepose_action():
 def putdown_action():
 	goal = villa_manipulation.msg.ForcePutDownGoal()
 	goal.place_pose =PoseStamped()
-	goal.place_pose.pose.position.x=1.2
-	goal.place_pose.pose.position.y=0.45
+	goal.place_pose.pose.position.x=1.4
+	goal.place_pose.pose.position.y=0.35
 	goal.place_pose.pose.position.z=0.78
 	goal.place_pose.header.frame_id='map'
  
@@ -472,7 +472,6 @@ while not rospy.is_shutdown():
 		rospy.logerr("Failed to obtain resource: {}\nRetrying...".format(e))
 
 limit_moves = 10000
-
 # tts.say("Hello! I'm ready'")
 rospy.sleep(1)
 
