@@ -64,8 +64,10 @@ class Controller():
 
 
 	# initial workload
-			self.previous_workload=13
-			self.SlugState.workload=12
+			# self.previous_workload=13
+			# self.SlugState.workload=12
+			self.previous_workload=10
+			self.SlugState.workload=9
 	# self.previous_workload=18
 	# self.SlugState.workload=17
 			self.policy_workload_add_previous=0
@@ -84,8 +86,8 @@ class Controller():
 			rospy.loginfo('action_server_started:%s', self._action_name)
 
 
-			# self.node_num='3278'
-			self.node_num='0'
+			self.node_num='419'
+			#self.node_num='0'
 			self.prev_node_num=self.node_num
 
 			self.next_state=None
