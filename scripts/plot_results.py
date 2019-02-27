@@ -17,7 +17,7 @@ def map_states(row):
 
 def main():
 
-	data = np.genfromtxt('02_26_init_30_percent_2.csv',delimiter=',', dtype = float)
+	data = np.genfromtxt('02_25_30_min.csv',delimiter=',', dtype = float)
 
 	time = [row[0]/60 for row in data]
 	time[0] = 0
@@ -36,54 +36,73 @@ def main():
 	for i in range(0, len(state)):
 		print state[i], complete_work_with_robot[i]
 
-	# exit()
+
+	# Plot 3
+	# plt.figure(1)
+	# plt.subplot(2, 1, 1)
+	# plt.plot(time[1:], state[1:], 'r', label='state')
+	# plt.scatter(time[1:],state[1:],c='r')
+	# axes = plt.gca()
+	# axes.set_xlim([-.1,7])
+	# axes.set_ylim([-.1,3.1])
+
+	# plt.grid()
+	# plt.subplot(2, 1, 2)
+
+	# plt.plot(time[1:], workload[1:], label='workload')
+	# plt.scatter(time[1:],workload[1:])
+	# axes = plt.gca()
+	# axes.set_xlim([-.1,7])
+	# axes.set_ylim([.2,.9])
+
+	# plt.grid()
+	# plt.show()
 
 
+	# Plot 2 
+	# plt.figure(1)
+	# plt.subplot(2, 1, 1)
+	# plt.plot(time[1:], state[1:], 'r', label='state')
+	# plt.scatter(time[1:],state[1:],c=cm.magma(complete_work_with_robot[1:]))
+	# plt.plot(time[1:], obstacle1[1:], 'o', label='obstacle1')
+	# plt.plot(time[1:], obstacle2[1:], 'o', label='obstacle2')
+	# axes = plt.gca()
+	# axes.set_xlim([-.1,6])
+	# axes.set_ylim([-.1,3.1])
 
-	# Plot 2
-	plt.figure(1)
-	plt.subplot(2, 1, 1)
-	plt.plot(time[1:], state[1:], 'r', label='state')
-	plt.scatter(time[1:],state[1:],c=cm.magma(complete_work_with_robot[1:]))
-	plt.plot(time[1:], obstacle1[1:], 'o', label='obstacle1')
-	plt.plot(time[1:], obstacle2[1:], 'o', label='obstacle2')
-	axes = plt.gca()
-	axes.set_xlim([-.1,6])
-	axes.set_ylim([-.1,3.1])
+	# plt.grid()
+	# plt.subplot(2, 1, 2)
 
-	plt.grid()
-	plt.subplot(2, 1, 2)
+	# plt.plot(time, workload, label='workload')
+	# # plt.scatter(time,workload)
+	# axes = plt.gca()
+	# axes.set_xlim([-.1,6])
+	# axes.set_ylim([.2,.9])
 
-	plt.plot(time, workload, label='workload')
-	# plt.scatter(time,workload)
-	axes = plt.gca()
-	axes.set_xlim([-.1,6])
-	axes.set_ylim([.2,.9])
-
-	plt.grid()
-	plt.show()
+	# plt.grid()
+	# plt.show()
 
 # # Plot 1
 # 	# plt.figure(1)
-# 	plt.plot(time, state, 'r', label='state')
-# 	# plt.plot(time, state, 'k--', label='state')
-# 	plt.scatter(time,state,c='k')
+	plt.plot(time, state, 'r', label='state')
+	# plt.plot(time, state, 'k--', label='state')
+	# plt.scatter(time,state,c='k')
 
-# 	# plt.scatter(time,state,c=cm.magma(complete_work_with_robot))
-# 	plt.plot(time, workload, label='workload')
-# 	plt.scatter(time,workload)
-# 	# plt.plot(time, obstacle1, 'o', label='obstacle1')
-# 	# plt.plot(time, obstacle2, 'o', label='obstacle2')
-# 	plt.plot()
-# 	plt.xlabel('time (s)')
-# 	# plt.legend()
-# 	plt.grid()
-# 	axes = plt.gca()
-# 	axes.set_ylim([-.1,3.1])
-# 	# axes.set_ylim([.2,.9])
-# 	axes.set_xlim([0,34])
+	# plt.scatter(time,state,c=cm.magma(complete_work_with_robot))
+	# plt.plot(time, workload, label='workload')
+	# plt.scatter(time,workload)
+	plt.plot(time, obstacle1, 'o', label='obstacle1')
+	plt.plot(time, obstacle2, 'o', label='obstacle2')
+	plt.plot()
+	plt.xlabel('time (s)')
+	# plt.legend()
+	plt.grid()
+	axes = plt.gca()
+	axes.set_ylim([-.1,3.1])
+	# axes.set_ylim([.2,.9])
+	axes.set_xlim([0,34])
 
-# 	plt.show()
+	plt.show()
 
 
 if __name__ == '__main__':
